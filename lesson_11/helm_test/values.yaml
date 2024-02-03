@@ -1,0 +1,9 @@
+name: jenkins
+replicas: 1
+deployment:
+  image: jenkins/jenkins
+  tag: latest
+service:
+  type: NodePort
+  port: 8080
+  targetPort: 8080

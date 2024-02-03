@@ -1,0 +1,11 @@
+##run using docker-compose up -d
+version: "3.4"
+services:
+  score-flsk:
+    build: .
+    container_name: score_flask
+    image: shaharco1804/score_flask:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./:/WorldOfGames

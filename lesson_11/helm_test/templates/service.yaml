@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.name }}
+spec:
+  selector:
+    name: {{ .Values.name }}
+  type: {{ .Values.service.type }}
+  ports:
+  - name: foo # Actually, no port is needed.
+    port: {{ .Values.service.port}}
+    targetPort: {{ .Values.service.targetPort }}

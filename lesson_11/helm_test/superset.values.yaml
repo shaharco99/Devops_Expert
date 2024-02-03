@@ -1,0 +1,9 @@
+name: superset
+replicas: 1
+deployment:
+  image: amancevice/superset
+  tag: latest
+service:
+  type: NodePort
+  port: 8080
+  targetPort: 8080

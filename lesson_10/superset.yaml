@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: superset
+spec:
+  selector:
+    name: superset
+  type: NodePort
+  ports:
+  - name: foo # Actually, no port is needed.
+    port: 8088
+    targetPort: 8088
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: superset
+  labels:
+    name: superset
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: superset
+  template:
+    metadata:
+      labels:
+        name: superset
+    spec:
+      containers:
+      - image: amancevice/superset
+        name: superset

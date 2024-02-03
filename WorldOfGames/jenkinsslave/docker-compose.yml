@@ -1,0 +1,9 @@
+##run using docker-compose up -d
+version: "3.4"
+services:
+  WorldOfGames:
+    image: shaharco1804/world_of_game:latest
+    ports:
+      - "8000:5000"
+    volumes:
+      - ./:/WorldOfGames

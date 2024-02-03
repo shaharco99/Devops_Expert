@@ -1,0 +1,76 @@
+properties([
+githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops/'),
+pipelineTriggers([githubPush()])])
+pipeline {
+agent {
+    kubernetes {
+      yaml '''
+        apiVersion: v1
+        kind: Pod
+        spec:
+          containers:
+          - name: docker
+            image: shaharco1804/world_of_game
+            command:
+            - cat
+            tty: true
+            volumeMounts:
+             - mountPath: /var/run/docker.sock
+               name: docker-sock
+          volumes:
+          - name: docker-sock
+            hostPath:
+              path: /var/run/docker.sock
+        '''
+    }
+  }
+
+   environment {
+       DOCKER_HUB_REPO = "shaharco1804/score_flask"
+       CONTAINER_NAME = "score_flask"
+	   imageVersion = "v${new Date().format('dd/mm/YYYY-HH:mm')}"
+   }
+
+    stages {
+		stage('clean') {
+              steps {
+                container('docker') {
+                    sh 'docker rm -f $CONTAINER_NAME || true'
+                    sh 'docker rm -f selenium || true'
+                }
+            }
+        }
+        stage('Build') {
+              steps {
+                container('docker') {
+                    sh 'docker build -t $DOCKER_HUB_REPO:$imageVersion --pull devops_expert/WorldOfGames/'
+                }
+            }
+        }
+        stage('Run') {
+              steps {
+                container('docker') {
+                    sh 'docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium shaharco1804/selenium:latest'
+                    sh 'cd devops_expert/WorldOfGames && docker-compose up -d'
+                }
+            }
+        }
+        stage('Test') {
+              steps {
+                container('docker') {
+                    sh 'sleep 5 && pytest devops_expert/WorldOfGames/e2e.py'
+                }
+            }
+        }
+        stage('Finalize') {
+            steps {
+                container('docker') {
+                    withDockerRegistry([ credentialsId: "dockerhub", url: "" ])
+                    {
+                        sh 'docker push $DOCKER_HUB_REPO:$imageVersion'
+                    }
+                }
+            }
+        }
+    }
+}

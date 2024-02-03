@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: weavescope
+spec:
+  selector:
+    name: weavescope
+  type: NodePort
+  ports:
+  - name: foo # Actually, no port is needed.
+    port: 80
+    protocol: TCP
+    targetPort: 4040
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weavescope
+  labels:
+    name: weavescope
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: weavescope
+  template:
+    metadata:
+      labels:
+        name: weavescope
+    spec:
+      containers:
+      - image: weaveworks/scope
+        name: weavescope
