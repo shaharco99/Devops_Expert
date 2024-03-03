@@ -3,10 +3,6 @@
 ARG image_name=python
 ARG image_version=3.10-alpine
 
-# Set environment variables
-ENV image_name=${image_name}
-ENV image_version=${image_version}
-
 # Use an the image from variables
 FROM ${image_name}:${image_version}
 
