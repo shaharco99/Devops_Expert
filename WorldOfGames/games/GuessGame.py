@@ -1,6 +1,5 @@
 from random import randrange
-from games.Live import valid_num
-from Score import add_score
+from games.Live import valid_num, add_score
 
 
 def generate_number(diff):
@@ -20,11 +19,11 @@ def compare_results(secret_number, user_number):
     return bool(secret_number == user_number)
 
 
-def play(diff):
+def play(diff,name):
     """This function plays the game GuessGame"""
     is_equal = compare_results(generate_number(diff), get_guess_from_user(diff))
     if is_equal:
         # print("you won")
-        add_score(diff)
+        add_score(diff,name)
     else:
         print("you lost")

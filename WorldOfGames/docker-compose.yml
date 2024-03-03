@@ -9,3 +9,9 @@ services:
       - "5000:5000"
     volumes:
       - ./:/WorldOfGames
+    depends_on:
+      - mongo
+  mongo:
+    image: "mongo:latest"
+    ports:
+      - "27017:27017"      
