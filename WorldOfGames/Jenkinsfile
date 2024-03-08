@@ -1,5 +1,5 @@
 properties([
-githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops/'),
+githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops_Expert.git/'),
 pipelineTriggers([githubPush()])])
 pipeline {
 agent {
@@ -28,7 +28,7 @@ agent {
    environment {
        DOCKER_HUB_REPO = "shaharco1804/score_flask"
        CONTAINER_NAME = "score_flask"
-	   imageVersion = "v${new Date().format('dd/mm/YYYY-HH:mm')}"
+	   imageVersion = "v${new Date().format('dd.mm.YYYY-HH:mm')}"
    }
 
     stages {
