@@ -352,11 +352,11 @@ controller:
                         remote {
                           url('https://github.com/shaharco99/Devops.git')
                         }
-                        branch('*/master')
+                        branch('*/main')
                       }
                     }
                     lightweight()
-                    scriptPath('devops_expert/WorldOfGames/Jenkinsfile')
+                    scriptPath('WorldOfGames/Jenkinsfile')
                   }
                 }
               }
