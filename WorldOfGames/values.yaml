@@ -263,7 +263,7 @@ controller:
   installLatestSpecifiedPlugins: true
 
   # List of plugins to install in addition to those listed in controller.installPlugins
-  additionalPlugins: [blueocean, ansible, locale, terraform, docker-plugin, docker-slaves, docker-workflow, docker-build-step]
+  additionalPlugins: [blueocean, ansible, locale, terraform, docker-plugin, docker-slaves, docker-workflow]
 
   # Enable to initialize the Jenkins controller only once on initial installation.
   # Without this, whenever the controller gets restarted (Evicted, etc.) it will fetch plugin updates which has the potential to cause breakage.
