@@ -91,7 +91,7 @@ controller:
   # The Protocol can be overwritten by specifying `controller.jenkinsUrlProtocol`.
   # jenkinsUrlProtocol: "https"
   # If you are not using the provided ingress you can specify `controller.jenkinsUrl` to change the url definition.
-  jenkinsUrl: "192.164.49.2:32000"
+  jenkinsUrl: "localhost:8080/"
   # If you set this prefix and use ingress controller then you might want to set the ingress path below
   # jenkinsUriPrefix: "/jenkins"
   # Enable pod security context (must be `true` if podSecurityContextOverride, runAsUser or fsGroup are set)
@@ -124,7 +124,7 @@ controller:
     allowPrivilegeEscalation: false
   servicePort: 8080
   targetPort: 8080
-  nodePort: 32000
+  nodePort:
   # For minikube, set this to NodePort, elsewhere use LoadBalancer
   # Use ClusterIP if your setup includes ingress controller
   serviceType: NodePort
@@ -189,7 +189,9 @@ controller:
 
   agentListenerEnabled: true
   agentListenerPort: 50000
-  agentListenerHostPort:
+  # -- Host port to listen for agents
+  agentListenerHostPort: 30002
+  # -- Node port to listen for agents
   agentListenerNodePort: 30002
   agentListenerExternalTrafficPolicy:
   agentListenerLoadBalancerSourceRanges:
@@ -360,8 +362,6 @@ controller:
           - kubernetes:
               containerCap: 10
               containerCapStr: "10"
-              jenkinsTunnel: ":30002"
-              jenkinsUrl: "http://192.168.49.2:32000/"
               name: "kubernetes"
               namespace: "jenkins"
               templates:
@@ -710,9 +710,12 @@ controller:
 agent:
   enabled: true
   defaultsProviderTemplate: ""
-  # URL for connecting to the Jenkins contoller
-  jenkinsUrl:
-  # connect to the specified host and port, instead of connecting directly to the Jenkins controller
+  # For connecting to the Jenkins controller
+  # -- Overrides the Kubernetes Jenkins URL
+  jenkinsUrl: "localhost:8080/"
+
+  # connects to the specified host and port, instead of connecting directly to the Jenkins controller
+  # -- Overrides the Kubernetes Jenkins tunnel
   jenkinsTunnel:
   kubernetesConnectTimeout: 5
   kubernetesReadTimeout: 15
