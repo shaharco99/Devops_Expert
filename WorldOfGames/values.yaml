@@ -108,7 +108,7 @@ controller:
   # The Protocol can be overwritten by specifying `controller.jenkinsUrlProtocol`.
   # jenkinsUrlProtocol: "https"
   # If you are not using the provided ingress you can specify `controller.jenkinsUrl` to change the url definition.
-  jenkinsUrl: "192.168.59.108:32000"
+  jenkinsUrl: "localhost:8080/"
   # If you set this prefix and use ingress controller then you might want to set the ingress path below
   # jenkinsUriPrefix: "/jenkins"
   # Enable pod security context (must be `true` if podSecurityContextOverride, runAsUser or fsGroup are set)
@@ -143,7 +143,7 @@ controller:
   servicePort: 8080
   # -- k8s target port
   targetPort: 8080
-  nodePort: 32000
+  nodePort:
   # For minikube, set this to NodePort, elsewhere use LoadBalancer
   # Use ClusterIP if your setup includes ingress controller
   serviceType: NodePort
@@ -211,7 +211,7 @@ controller:
   # -- Listening port for agents
   agentListenerPort: 50000
   # -- Host port to listen for agents
-  agentListenerHostPort:
+  agentListenerHostPort: 30002
   # -- Node port to listen for agents
   agentListenerNodePort: 30002
   # ref: https://kubernetes.io/docs/concepts/services-networking/service/#traffic-policies
@@ -741,7 +741,7 @@ agent:
   defaultsProviderTemplate: ""
   # For connecting to the Jenkins controller
   # -- Overrides the Kubernetes Jenkins URL
-  jenkinsUrl: 192.168.59.108:32000
+  jenkinsUrl: "localhost:8080/"
 
   # connects to the specified host and port, instead of connecting directly to the Jenkins controller
   # -- Overrides the Kubernetes Jenkins tunnel

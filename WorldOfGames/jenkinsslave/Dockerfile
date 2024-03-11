@@ -4,10 +4,6 @@ ARG image_name=linuxserver
 ARG image_version=docker-compose
 ARG packages='python3 pip wget unzip telnet iputils-ping'
 
-# Set environment variables
-ENV image_name=${image_name}
-ENV image_version=${image_version}
-
 # Use an the image from variables
 FROM ${image_name}:${image_version}
 RUN apt-get update -y
