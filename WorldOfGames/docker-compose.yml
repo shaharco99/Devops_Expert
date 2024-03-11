@@ -1,7 +1,7 @@
 ##run using docker-compose up -d
 version: "3.4"
 services:
-  score-flsk:
+  score-flask:
     build: .
     container_name: score_flask
     image: shaharco1804/score_flask:latest
@@ -10,8 +10,15 @@ services:
     volumes:
       - ./:/WorldOfGames
     depends_on:
-      - mongo
-  mongo:
-    image: "mongo:latest"
+      - mongodb
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
     ports:
-      - "27017:27017"      
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db`
+
+volumes:
+  mongodb_data:
+    driver: local
