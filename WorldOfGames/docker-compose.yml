@@ -9,3 +9,7 @@ services:
       - "5000:5000"
     volumes:
       - ./:/WorldOfGames
+
+volumes:
+  score:
+    driver: local
