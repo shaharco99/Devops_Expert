@@ -23,5 +23,3 @@ services:
 volumes:
   mongodb_data:
     driver: local
-  score:
-    driver: local
