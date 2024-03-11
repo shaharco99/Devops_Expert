@@ -1,7 +1,6 @@
 from random import randrange
 from time import sleep
-from games.Live import valid_num
-from Score import add_score
+from games.Live import valid_num ,add_score
 from os import system
 
 
@@ -42,11 +41,11 @@ def is_list_equal(list_of_nums, list_of_user):
     return list_equal
 
 
-def play(diff):
+def play(diff,name):
     """This function plays the game MemoryGame"""
     list_equal = is_list_equal(generate_sequence(diff), get_list_from_user(diff))
     if list_equal:
         # print("you won")
-        add_score(diff)
+        add_score(diff,name)
     else:
         print("you lost")

@@ -1,14 +1,14 @@
 # run with commend : flask --app MainScores.py run
 import werkzeug
-from flask import Flask, render_template , request, redirect ,url_for
-from Score import read_score
+from flask import Flask, render_template , request, redirect ,url_for, jsonify
+from games.Live import read_score
 
 app = Flask(__name__, template_folder='template')
 
-
+# TODO pass player to mainscore
 @app.route('/')
 def content():
-    return render_template('index.html', score=read_score())
+    return render_template('index.html', score=read_score(player))
 
 
 @app.route('/gamepicker', methods=["GET","POST"])

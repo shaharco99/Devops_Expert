@@ -1,6 +1,46 @@
-def welcome(name):
-    """This function greets the user with his name"""
-    print(f"Hello {name} and welcome to the Word of Games(Wog).\nHere you can find many cool games to play.")
+from pymongo import MongoClient
+
+# Connect to the MongoDB server
+client = MongoClient('mongodb://localhost:27017/')
+
+# Select the 'scores' database
+db = client['scores']
+
+# Select the 'users' collection
+users_collection = db['users']
+
+
+
+def welcome(player):
+    # This function greets the user with his name
+    print(f"Hello {player} and welcome to the Word of Games(Wog).\nHere you can find many cool games to play.")
+    return player
+
+
+def read_score(player):
+    # Retrieve the user's score from the database
+    user_data = users_collection.find_one({'name': player})
+    if user_data:
+        return user_data['score']
+    else:
+        return None
+    
+    
+def add_score(diff,player):
+    """add the points_of_winning to score"""
+    cur_score = read_score(player)
+    new_score = cur_score + ((diff * 3) + 5)
+    print(f"your new score is {new_score}")
+    write_score(player,new_score)
+
+
+def write_score(player, new_score):
+    # Update the user's score in the database
+    users_collection.update_one(
+        {'name': player},
+        {'$set': {'score': new_score}},
+        upsert=True
+    )
 
 
 def load_game():

@@ -58,4 +58,4 @@ override.tf.json
 terraform.rc
 *.zip
 
-*/__pycache__
+**/__pycache__
