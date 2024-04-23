@@ -47,7 +47,7 @@ jobs:
     displayName: 'Run compose'
 
   - script: |
-      sleep 5 && pytest devops_expert/WorldOfGames/e2e.py
+      sleep 5 && pytest devops_expert/WorldOfGames/test.py
     displayName: 'Test stage'
 
   - task: Docker@2
