@@ -1,5 +1,5 @@
 properties([
-githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops_Expert.git/'),
+githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops_Expert.git'),
 pipelineTriggers([githubPush()])])
 pipeline {
 agent {
