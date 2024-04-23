@@ -5,3 +5,5 @@ panda
 CurrencyConverter
 werkzeug
 pathlib
+selenium
+pytest
