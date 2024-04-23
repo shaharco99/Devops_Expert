@@ -370,7 +370,7 @@ controller:
                     scm {
                       git {
                         remote {
-                          url('https://github.com/shaharco99/Devops.git')
+                          url('https://github.com/shaharco99/Devops_Expert.git')
                         }
                         branch('*/main')
                       }
@@ -387,7 +387,7 @@ controller:
               containerCap: 10
               containerCapStr: "10"
               jenkinsTunnel: ":30002"
-              jenkinsUrl: "http://192.168.59.108:32000"
+              jenkinsUrl: "http://localhost:8080"
               name: "kubernetes"
               namespace: "jenkins"
               templates:
