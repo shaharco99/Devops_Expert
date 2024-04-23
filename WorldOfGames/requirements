@@ -6,3 +6,4 @@ CurrencyConverter
 werkzeug
 pathlib
 pymongo
+flask_pymongo

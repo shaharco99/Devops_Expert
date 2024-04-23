@@ -5,21 +5,29 @@ services:
     build: .
     container_name: score_flask
     image: shaharco1804/score_flask:latest
+    networks:
+    - worldofgames_default
     ports:
       - "5000:5000"
     volumes:
       - ./:/WorldOfGames
-
     depends_on:
       - mongodb
+
   mongodb:
-    image: mongo:latest
+    image: bitnami/mongodb:latest
     container_name: mongodb
+    networks:
+    - worldofgames_default
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db`
+      - mongodb_data:/data/db
 
 volumes:
   mongodb_data:
     driver: local
+
+networks:
+  worldofgames_default:
+    driver: bridge

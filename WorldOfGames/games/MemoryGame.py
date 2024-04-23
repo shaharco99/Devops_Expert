@@ -1,6 +1,7 @@
 from random import randrange
 from time import sleep
-from games.Live import valid_num ,add_score
+from games.Live import valid_num
+from MainScores import add_score
 from os import system
 
 

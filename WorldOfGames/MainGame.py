@@ -1,5 +1,6 @@
 from games import CurrencyRouletteGame, GuessGame, MemoryGame
-from games.Live import welcome,load_game,difficulty,read_score,write_score
+from games.Live import welcome,load_game,difficulty
+from MainScores import read_score,write_score
 
 
 player = input("What is your name: ")
