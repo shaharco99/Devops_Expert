@@ -1,8 +1,3 @@
-# Starter pipeline
-# Start with a minimal pipeline that you can customize to build and deploy your code.
-# Add steps that build, run tests, deploy, and more:
-# https://aka.ms/yaml
-
 trigger:
 - main
 
@@ -16,6 +11,15 @@ steps:
     export imageVersion="v$(date +%d.%m.%Y-%H:%M)"
   displayName: 'Set environment variables'
 
+- task: DockerInstaller@0
+  inputs:
+    dockerVersion: '17.09.0-ce'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'docker shaharco'
+    command: 'login'
+
 - script: |
     docker rm -f $CONTAINER_NAME || true
     docker rm -f selenium || true
@@ -23,6 +27,7 @@ steps:
 
 - task: Docker@2
   inputs:
+    containerRegistry: 'docker shaharco'
     repository: '$(DOCKER_HUB_REPO)'
     command: 'build'
     Dockerfile: 'devops_expert/WorldOfGames//Dockerfile'
@@ -31,9 +36,9 @@ steps:
 
 - task: Docker@2
   inputs:
-    repository: 'shaharco1804/selenium:latest'
+    containerRegistry: 'docker shaharco'
     command: 'start'
-  displayName: 'Build stage'
+    container: 'shaharco1804/selenium:latest'
 
 - task: DockerCompose@0
   inputs:
@@ -54,6 +59,8 @@ steps:
     command: 'push'
     tags: '$(imageVersion)'
   displayName: 'Finalize stage'
-- task: DockerInstaller@0
+
+- task: Docker@2
   inputs:
-    dockerVersion: '17.09.0-ce'
+    containerRegistry: 'docker shaharco'
+    command: 'logout'
