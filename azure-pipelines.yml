@@ -1,16 +1,17 @@
 trigger:
 - main
+
+variables:
+  DOCKER_HUB_REPO: 'shaharco1804/score_flask'
+  CONTAINER_NAME: 'score_flask'
+  imageVersion: 'v$(Date:yyyyMMdd)'
+
 jobs:
 - job: BuildAndPush
-  displayName: 'Build and push image to Docker Hub'
+  displayName: 'Build test and push image to Docker Hub'
   pool:
     vmImage: 'ubuntu-latest'
   steps:
-  - script: |
-      export DOCKER_HUB_REPO="shaharco1804/score_flask"
-      export CONTAINER_NAME="score_flask"
-      export imageVersion="v$(date +%d.%m.%Y-%H:%M)"
-    displayName: 'Set environment variables'
 
   - task: Docker@2
     inputs:
