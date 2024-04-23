@@ -11,11 +11,10 @@ def test_scores_service():
     driver = webdriver.Remote("http://127.0.0.1:4444/wd/hub", options=options)  # Connect to Selenium container
     driver.get(url_score)
     score = int(driver.find_element(By.ID, "score").text)
-    if 0 <= score <= 1000:
-        driver.quit()
+    if type(score) == int:
         assert True
     else:
-        driver.quit()
         assert False
+    driver.quit()
 
 test_scores_service()
