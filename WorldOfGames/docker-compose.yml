@@ -1,7 +1,6 @@
 ##run using docker-compose up -d
-version: "3.4"
 services:
-  score-flsk:
+  score:
     build: .
     container_name: score_flask
     image: shaharco1804/score_flask:latest
@@ -9,6 +8,13 @@ services:
       - "5000:5000"
     volumes:
       - ./:/WorldOfGames
+
+  selenium:
+    container_name: selenium
+    image: selenium/standalone-chrome
+    ports:
+      - "4444:4444"
+
 
 volumes:
   score:
