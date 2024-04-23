@@ -11,34 +11,6 @@ pool:
 
 steps:
 - script: |
-    cat << EOF > docker-pod.yaml
-    apiVersion: v1
-    kind: Pod
-    spec:
-      containers:
-      - name: docker
-        image: shaharco1804/world_of_game
-        command:
-        - cat
-        tty: true
-        volumeMounts:
-         - mountPath: /var/run/docker.sock
-           name: docker-sock
-      volumes:
-      - name: docker-sock
-        hostPath:
-          path: /var/run/docker.sock
-    EOF
-  displayName: 'Create Docker Pod YAML file'
-- task: KubernetesManifest@0
-  inputs:
-    action: 'apply'
-    kubernetesServiceConnection: 'your-kubernetes-connection' # Replace with your Kubernetes connection name
-    namespace: 'default'
-    manifests: |
-      $(Build.SourcesDirectory)/docker-pod.yaml
-
-- script: |
     export DOCKER_HUB_REPO="shaharco1804/score_flask"
     export CONTAINER_NAME="score_flask"
     export imageVersion="v$(date +%d.%m.%Y-%H:%M)"
@@ -49,14 +21,27 @@ steps:
     docker rm -f selenium || true
   displayName: 'Clean stage'
 
-- script: |
-    docker build -t $DOCKER_HUB_REPO:$imageVersion --pull devops_expert/WorldOfGames/
+- task: Docker@2
+  inputs:
+    repository: '$(DOCKER_HUB_REPO)'
+    command: 'build'
+    Dockerfile: 'devops_expert/WorldOfGames//Dockerfile'
+    buildContext: 'devops_expert/WorldOfGames/'
   displayName: 'Build stage'
 
-- script: |
-    docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium shaharco1804/selenium:latest
-    cd devops_expert/WorldOfGames && docker-compose up -d
-  displayName: 'Run stage'
+- task: Docker@2
+  inputs:
+    repository: 'shaharco1804/selenium:latest'
+    command: 'start'
+  displayName: 'Build stage'
+
+- task: DockerCompose@0
+  inputs:
+    containerregistrytype: 'Container Registry'
+    dockerComposeFile: 'devops_expert/WorldOfGames/docker-compose.yml'
+    action: 'Run a Docker Compose command'
+    dockerComposeCommand: 'rm --all'
+  displayName: 'Run compose'
 
 - script: |
     sleep 5 && pytest devops_expert/WorldOfGames/e2e.py
@@ -69,4 +54,6 @@ steps:
     command: 'push'
     tags: '$(imageVersion)'
   displayName: 'Finalize stage'
-
+- task: DockerInstaller@0
+  inputs:
+    dockerVersion: '17.09.0-ce'
