@@ -32,11 +32,6 @@ jobs:
       buildContext: 'devops_expert/WorldOfGames/'
     displayName: 'Build stage'
 
-  - task: Docker@2
-    inputs:
-      containerRegistry: 'docker'
-      command: 'start'
-      container: 'shaharco1804/selenium:latest'
 
   - task: DockerCompose@0
     inputs:
@@ -45,6 +40,7 @@ jobs:
       action: 'Run a Docker Compose command'
       dockerComposeCommand: 'rm --all'
     displayName: 'Run compose'
+
 
   - script: |
       sleep 5 && pytest devops_expert/WorldOfGames/test.py
