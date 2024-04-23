@@ -1,0 +1,72 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- script: |
+    cat << EOF > docker-pod.yaml
+    apiVersion: v1
+    kind: Pod
+    spec:
+      containers:
+      - name: docker
+        image: shaharco1804/world_of_game
+        command:
+        - cat
+        tty: true
+        volumeMounts:
+         - mountPath: /var/run/docker.sock
+           name: docker-sock
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+    EOF
+  displayName: 'Create Docker Pod YAML file'
+- task: KubernetesManifest@0
+  inputs:
+    action: 'apply'
+    kubernetesServiceConnection: 'your-kubernetes-connection' # Replace with your Kubernetes connection name
+    namespace: 'default'
+    manifests: |
+      $(Build.SourcesDirectory)/docker-pod.yaml
+
+- script: |
+    export DOCKER_HUB_REPO="shaharco1804/score_flask"
+    export CONTAINER_NAME="score_flask"
+    export imageVersion="v$(date +%d.%m.%Y-%H:%M)"
+  displayName: 'Set environment variables'
+
+- script: |
+    docker rm -f $CONTAINER_NAME || true
+    docker rm -f selenium || true
+  displayName: 'Clean stage'
+
+- script: |
+    docker build -t $DOCKER_HUB_REPO:$imageVersion --pull devops_expert/WorldOfGames/
+  displayName: 'Build stage'
+
+- script: |
+    docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium shaharco1804/selenium:latest
+    cd devops_expert/WorldOfGames && docker-compose up -d
+  displayName: 'Run stage'
+
+- script: |
+    sleep 5 && pytest devops_expert/WorldOfGames/e2e.py
+  displayName: 'Test stage'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'dockerhub'
+    repository: '$(DOCKER_HUB_REPO)'
+    command: 'push'
+    tags: '$(imageVersion)'
+  displayName: 'Finalize stage'
+
