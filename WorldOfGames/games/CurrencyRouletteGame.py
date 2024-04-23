@@ -1,7 +1,7 @@
 from currency_converter import CurrencyConverter
 from random import randrange
 from games.Live import valid_num
-from Score import add_score
+from MainScores import add_score
 
 
 def get_money_interval(diff):
@@ -16,7 +16,7 @@ def get_guess_from_user(amount):
     return int(guess)
 
 
-def play(diff):
+def play(diff,name):
     """This function plays the game CurrencyRouletteGame"""
     amount = randrange(1, 100)
     interval = get_money_interval(diff)
@@ -29,7 +29,7 @@ def play(diff):
     guess = get_guess_from_user(amount)
     if minimum < guess < maximum:
         print(f"you won, you were close enough the answer is {total} ")
-        add_score(diff)
+        add_score(diff,name)
     else:
         from_answer = round(total - guess)
         print(f"you lost the answer is {total},you were this far from the answer {from_answer}")

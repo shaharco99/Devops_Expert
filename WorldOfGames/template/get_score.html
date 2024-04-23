@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<!-- <head>
+    <title>Get Score Page</title>
+    <script>
+        function redirectToScore() {
+            var playerName = document.getElementById('player_name').value;
+            window.location.href = '/get_score/' + playerName;
+        }
+    </script>
+</head> -->
+
+<body>
+    <h1>Get Your Score</h1>
+    <form action="{{ url_for('get_score') }}" method="get">
+        <label for="player">What is your name?</label>
+        <input type="text" id="player" name="player" required>
+        <button type="submit">Get My Score</button>
+    </form>
+</body>
+
+</html>

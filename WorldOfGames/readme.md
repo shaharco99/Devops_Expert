@@ -22,4 +22,4 @@ $ docker exec -it score_flask python MainGame.py
 $ helm install jenkins jenkins/jenkins -f values.yaml --namespace=jenkins
 ```
 After build crate a pipline and connect it to this git repo,
-and run the jenkinsfile attached to build run and check the score_flask image 
+and run the jenkinsfile attached to build run and check the score_flask image dont forget to check the minikube ip and update in values

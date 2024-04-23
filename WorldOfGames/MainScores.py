@@ -1,55 +1,77 @@
 # run with commend : flask --app MainScores.py run
 import werkzeug
-from flask import Flask, render_template , request, redirect ,url_for
-from Score import read_score
+from flask import Flask, render_template , request, redirect ,url_for, jsonify
+from pymongo import MongoClient
+from flask_pymongo import PyMongo
 
 app = Flask(__name__, template_folder='template')
 
+# MongoDB connection details
+mongo_host = 'mongodb'
+mongo_port = 27017  # Default MongoDB port
+# mongo_username = 'your_username'
+# mongo_password = 'your_password'
+mongo_database = 'monogodb'
+
+def get_collections():
+    client = MongoClient(host=mongo_host,
+                     port=mongo_port,
+                    #  username=mongo_username,
+                    #  password=mongo_password,
+                     authSource=mongo_database
+                        )
+    db = client.get_database()
+    return db
+
+def read_score(player):
+    # List all collections
+    collections = get_collections()
+    # collections = db.list_collection_names()
+    # print("Collections:")
+    # for collection in collections:
+        # print(collection)
+    return collections
+    # Retrieve the user's score from the database  
+    # if db.find_one(player):
+    #     score = user_data['score']
+    #     return jsonify(score)
+    # else:
+    #     return None
+        # except Exception as e:
+        #     return jsonify({'error': str(e)})
+
+
+def add_score(diff,player):
+    # add the points_of_winning to score
+    cur_score = read_score(player)
+    new_score = cur_score + ((diff * 3) + 5)
+    print(f"your new score is {new_score}")
+    write_score(player,new_score)
+
+def write_score(player, new_score):
+    # Update the user's score in the database
+    get_users_collection().update_one(
+        {'name': player},
+        {'$set': {'score': new_score}},
+        upsert=True
+    )    
 
 @app.route('/')
 def content():
-    return render_template('index.html', score=read_score())
+    return render_template('get_score.html')
 
+# Route to handle the form submission and display the player's score
+@app.route('/get_score', methods=['get'])
+def get_score():
+    player = request.args.get('player')
+    score = read_score(player)
+    return render_template('index.html', player=player, score=score)
 
-@app.route('/gamepicker', methods=["GET","POST"])
-def gamepicker():
-    return render_template('gamepicker.html')
-
-
-@app.route('/memorygame')
-def memorygame():
-    return render_template('memorygame.html')
-
-
-@app.route('/guessgame')
-def guessgame():
-    return render_template('guessgame.html')
-
-
-@app.route('/currency')
-def currency():
-    return render_template('currency.html')
-
-
-@app.route('/savegame')
-def savegame():
-    return render_template('savegame.html')
-
-
-@app.route('/process_input', methods=['POST'])
-def process_input():
-    game_chosen = int(request.form['game_chosen'])
-    if game_chosen == 1:
-        return redirect(url_for('memorygame'))
-    elif game_chosen == 2:
-        return redirect(url_for('guessgame'))
-    elif game_chosen == 3:
-        return redirect(url_for('currency'))
 
 
 @app.errorhandler(werkzeug.exceptions.BadRequest)
 def handle_bad_request(e):
-    return render_template('err500.html')
+    return render_template('error.html', message=f"file not found!")
 
 
 app.register_error_handler(500, handle_bad_request)
