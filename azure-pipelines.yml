@@ -1,66 +1,63 @@
 trigger:
 - main
+jobs:
+- job: BuildAndPush
+  displayName: 'Build and push image to Docker Hub'
+  pool:
+    vmImage: 'ubuntu-latest'
+  steps:
+  - script: |
+      export DOCKER_HUB_REPO="shaharco1804/score_flask"
+      export CONTAINER_NAME="score_flask"
+      export imageVersion="v$(date +%d.%m.%Y-%H:%M)"
+    displayName: 'Set environment variables'
 
-pool:
-  vmImage: 'ubuntu-latest'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'docker'
+      command: 'login'
 
-steps:
-- script: |
-    export DOCKER_HUB_REPO="shaharco1804/score_flask"
-    export CONTAINER_NAME="score_flask"
-    export imageVersion="v$(date +%d.%m.%Y-%H:%M)"
-  displayName: 'Set environment variables'
+  - script: |
+      docker rm -f $CONTAINER_NAME || true
+      docker rm -f selenium || true
+    displayName: 'Clean stage'
 
-- task: DockerInstaller@0
-  inputs:
-    dockerVersion: '17.09.0-ce'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'docker'
+      repository: '$(DOCKER_HUB_REPO)'
+      command: 'build'
+      Dockerfile: 'devops_expert/WorldOfGames//Dockerfile'
+      buildContext: 'devops_expert/WorldOfGames/'
+    displayName: 'Build stage'
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'docker shaharco'
-    command: 'login'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'docker'
+      command: 'start'
+      container: 'shaharco1804/selenium:latest'
 
-- script: |
-    docker rm -f $CONTAINER_NAME || true
-    docker rm -f selenium || true
-  displayName: 'Clean stage'
+  - task: DockerCompose@0
+    inputs:
+      containerregistrytype: 'Container Registry'
+      dockerComposeFile: 'devops_expert/WorldOfGames/docker-compose.yml'
+      action: 'Run a Docker Compose command'
+      dockerComposeCommand: 'rm --all'
+    displayName: 'Run compose'
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'docker shaharco'
-    repository: '$(DOCKER_HUB_REPO)'
-    command: 'build'
-    Dockerfile: 'devops_expert/WorldOfGames//Dockerfile'
-    buildContext: 'devops_expert/WorldOfGames/'
-  displayName: 'Build stage'
+  - script: |
+      sleep 5 && pytest devops_expert/WorldOfGames/e2e.py
+    displayName: 'Test stage'
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'docker shaharco'
-    command: 'start'
-    container: 'shaharco1804/selenium:latest'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'docker'
+      repository: '$(DOCKER_HUB_REPO)'
+      command: 'push'
+      tags: '$(imageVersion)'
+    displayName: 'Finalize stage'
 
-- task: DockerCompose@0
-  inputs:
-    containerregistrytype: 'Container Registry'
-    dockerComposeFile: 'devops_expert/WorldOfGames/docker-compose.yml'
-    action: 'Run a Docker Compose command'
-    dockerComposeCommand: 'rm --all'
-  displayName: 'Run compose'
-
-- script: |
-    sleep 5 && pytest devops_expert/WorldOfGames/e2e.py
-  displayName: 'Test stage'
-
-- task: Docker@2
-  inputs:
-    containerRegistry: 'dockerhub'
-    repository: '$(DOCKER_HUB_REPO)'
-    command: 'push'
-    tags: '$(imageVersion)'
-  displayName: 'Finalize stage'
-
-- task: Docker@2
-  inputs:
-    containerRegistry: 'docker shaharco'
-    command: 'logout'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'docker'
+      command: 'logout'
