@@ -28,7 +28,7 @@ agent {
    environment {
        DOCKER_HUB_REPO = "shaharco1804/score_flask"
        CONTAINER_NAME = "score_flask"
-	   imageVersion = "v${new Date().format('dd.mm.YYYY-HH:mm')}"
+	   imageVersion = "v${new Date().format('YYYYmmdd')}"
    }
 
     stages {
@@ -43,22 +43,21 @@ agent {
         stage('Build') {
               steps {
                 container('docker') {
-                    sh 'docker build -t $DOCKER_HUB_REPO:$imageVersion --pull devops_expert/WorldOfGames/'
+                    sh 'docker build -t $DOCKER_HUB_REPO:$imageVersion --pull WorldOfGames/'
                 }
             }
         }
         stage('Run') {
               steps {
                 container('docker') {
-                    sh 'docker run --rm -d -p 4444:4444 -p 5900:5900 --name selenium shaharco1804/selenium:latest'
-                    sh 'cd devops_expert/WorldOfGames && docker-compose up -d'
+                    sh 'cd WorldOfGames && docker-compose up -d'
                 }
             }
         }
         stage('Test') {
               steps {
                 container('docker') {
-                    sh 'sleep 5 && pytest devops_expert/WorldOfGames/test.py'
+                    sh 'sleep 5 && pytest WorldOfGames/test.py'
                 }
             }
         }
