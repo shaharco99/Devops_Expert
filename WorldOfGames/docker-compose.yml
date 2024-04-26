@@ -3,7 +3,7 @@ services:
   score:
     build: .
     container_name: score_flask
-    image: shaharco1804/score_flask:latest
+    image: shaharco1804/score_flask:${imageVersion}
     ports:
       - "5000:5000"
     volumes:
