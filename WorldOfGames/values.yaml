@@ -108,7 +108,7 @@ controller:
   # The Protocol can be overwritten by specifying `controller.jenkinsUrlProtocol`.
   # jenkinsUrlProtocol: "https"
   # If you are not using the provided ingress you can specify `controller.jenkinsUrl` to change the url definition.
-  jenkinsUrl: "localhost:8080/"
+  jenkinsUrl: "jenkins.jenkins.svc.cluster.local:8080"
   # If you set this prefix and use ingress controller then you might want to set the ingress path below
   # jenkinsUriPrefix: "/jenkins"
   # Enable pod security context (must be `true` if podSecurityContextOverride, runAsUser or fsGroup are set)
@@ -386,8 +386,8 @@ controller:
           - kubernetes:
               containerCap: 10
               containerCapStr: "10"
-              jenkinsTunnel: ":30002"
-              jenkinsUrl: "http://localhost:8080"
+              jenkinsTunnel: "jenkins-agent.jenkins.svc.cluster.local:50000"
+              jenkinsUrl: "http://jenkins.jenkins.svc.cluster.local:8080"
               name: "kubernetes"
               namespace: "jenkins"
               templates:
@@ -741,7 +741,7 @@ agent:
   defaultsProviderTemplate: ""
   # For connecting to the Jenkins controller
   # -- Overrides the Kubernetes Jenkins URL
-  jenkinsUrl: "localhost:8080/"
+  jenkinsUrl: 
 
   # connects to the specified host and port, instead of connecting directly to the Jenkins controller
   # -- Overrides the Kubernetes Jenkins tunnel
