@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
 def test_scores_service():
-    url_score = "http://127.0.0.1:5000/" 
+    url_score = "http://score:5000/" 
     options = Options()
     options.add_argument('--no-sandbox')
     options.add_argument('--headless')
