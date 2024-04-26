@@ -28,22 +28,23 @@ jobs:
       containerRegistry: 'docker'
       repository: '$(DOCKER_HUB_REPO)'
       command: 'build'
-      Dockerfile: 'devops_expert/WorldOfGames//Dockerfile'
-      buildContext: 'devops_expert/WorldOfGames/'
+      Dockerfile: 'WorldOfGames//Dockerfile'
+      buildContext: 'WorldOfGames/'
     displayName: 'Build stage'
 
 
   - task: DockerCompose@0
     inputs:
       containerregistrytype: 'Container Registry'
-      dockerComposeFile: 'devops_expert/WorldOfGames/docker-compose.yml'
+      dockerComposeFile: 'WorldOfGames/docker-compose.yml'
       action: 'Run a Docker Compose command'
       dockerComposeCommand: 'rm --all'
     displayName: 'Run compose'
 
 
   - script: |
-      sleep 5 && pytest devops_expert/WorldOfGames/test.py
+      pip install  pytest
+      sleep 5 && pytest WorldOfGames/test.py
     displayName: 'Test stage'
 
   - task: Docker@2
