@@ -43,7 +43,7 @@ jobs:
 
 
   - script: |
-      pip install  pytest
+      pip install -r WorldOfGames/requirements
       sleep 5 && pytest WorldOfGames/test.py
     displayName: 'Test stage'
 
