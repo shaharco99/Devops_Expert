@@ -3,7 +3,7 @@ services:
   score:
     build: .
     container_name: score_flask
-    image: shaharco1804/score_flask:${imageVersion}
+    image:  ${DOCKER_HUB_REPO:-shaharco1804/score_flask}:${imageVersion:-latest}
     ports:
       - "5000:5000"
     volumes:
