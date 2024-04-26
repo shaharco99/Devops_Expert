@@ -8,8 +8,8 @@ FROM ${image_name}:${image_version}
 
 RUN mkdir "WorldOfGames"
 VOLUME /WorldOfGames
-WORKDIR /WorldOfGames
-COPY requirements requirements
+# WORKDIR /WorldOfGames
+COPY requirements /WorldOfGames/requirements
 RUN pip install --upgrade pip
-RUN pip install -r requirements
-CMD ["python", "MainScores.py"]
+RUN pip install -r /WorldOfGames/requirements
+CMD ["python", "/WorldOfGames/MainScores.py"]
