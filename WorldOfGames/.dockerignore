@@ -1,0 +1,7 @@
+**/.pytest_cache
+**/.venv
+**/__pycache__
+**/jenkinsslave
+**/*.md
+**/*.yml
+**/*.yaml

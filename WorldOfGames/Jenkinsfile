@@ -59,11 +59,8 @@ pipeline {
                 container('docker') {
                     sh '''
                         echo "=== Cleaning up containers ==="
-                        docker ps -a
                         docker rm -f ${CONTAINER_NAME} || echo "No container ${CONTAINER_NAME} to remove"
                         docker rm -f selenium || echo "No container selenium to remove"
-                        echo "=== After cleanup ==="
-                        docker ps -a
                     '''
                 }
             }
@@ -91,8 +88,6 @@ pipeline {
                         cd ${WORKSPACE_DIR}
                         docker-compose down --remove-orphans
                         docker-compose up -d --build
-                        echo "=== Service Status ==="
-                        docker-compose ps
                         echo "=== Service Logs ==="
                         docker-compose logs score
                     '''
@@ -106,19 +101,6 @@ pipeline {
                     sh '''
                         echo "=== Running Tests ==="
                         cd ${WORKSPACE_DIR}
-                        # Wait for service to be ready
-                        echo "Waiting for score service to be ready..."
-                        timeout=30
-                        while ! curl -s http://localhost:5000 > /dev/null; do
-                            if [ "$timeout" -le "0" ]; then
-                                echo "Timeout waiting for score service"
-                                docker-compose logs score
-                                exit 1
-                            fi
-                            echo "Waiting... ($timeout seconds left)"
-                            sleep 1
-                            timeout=$((timeout-1))
-                        done
                         
                         echo "=== Test Environment Setup ==="
                         echo "Current directory: $(pwd)"
@@ -157,7 +139,6 @@ pipeline {
                     echo "=== Cleanup ==="
                     cd ${WORKSPACE_DIR}
                     docker-compose down --remove-orphans
-                    docker ps -a
                 '''
             }
         }

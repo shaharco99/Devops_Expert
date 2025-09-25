@@ -22,8 +22,8 @@ services:
     command: >
       sh -c "
       ls -la /WorldOfGames &&
-      pip install --no-cache-dir -r /WorldOfGames/requirements &&
-      pytest -v /WorldOfGames/test.py
+      pip install --no-cache-dir -r requirements &&
+      pytest -v test.py
       "
     environment:
       - PYTHONUNBUFFERED=1
