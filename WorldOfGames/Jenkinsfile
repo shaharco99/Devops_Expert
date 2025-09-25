@@ -128,25 +128,24 @@ pipeline {
     post {
         always {
             container('docker') {
-                always {
-                    container('docker') {
-                        sh '''
-                            echo "=== Cleanup ==="
-                            docker-compose down --remove-orphans
-                            docker ps -a
-                        '''
-                    }
-                }
-                failure {
-                    container('docker') {
-                        sh '''
-                            echo "=== Debug Information on Failure ==="
-                            echo "Docker Compose Logs:"
-                            docker-compose logs
-                            echo "Docker Container Status:"
-                            docker ps -a
-                            echo "Workspace Contents:"
-                            ls -la
-                        '''
-                    }
-                }
+                sh '''
+                    echo "=== Cleanup ==="
+                    docker-compose down --remove-orphans
+                '''
+            }
+        }
+        failure {
+            container('docker') {
+                sh '''
+                    echo "=== Debug Information on Failure ==="
+                    echo "Docker Compose Logs:"
+                    docker-compose logs
+                    echo "Docker Container Status:"
+                    docker ps -a
+                    echo "Workspace Contents:"
+                    ls -la
+                '''
+            }
+        }
+    }
+}
