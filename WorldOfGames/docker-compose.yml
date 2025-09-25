@@ -12,6 +12,18 @@ services:
     volumes:
       - ./:/WorldOfGames
 
+  tester:
+    image: python:slim
+    working_dir: /WorldOfGames
+    volumes:
+      - ./:/WorldOfGames
+    depends_on:
+      - score
+    # install test deps at runtime then run pytest
+    command: ["sh", "-c", "pip install --no-cache-dir -r requirements && pytest -q test.py"]
+    environment:
+      - PYTHONUNBUFFERED=1
+
 volumes:
   score:
     driver: local

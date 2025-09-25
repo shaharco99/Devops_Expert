@@ -1,9 +1,5 @@
 requests
 flask
-redis
-panda
-CurrencyConverter
 werkzeug
 pathlib
-selenium
 pytest

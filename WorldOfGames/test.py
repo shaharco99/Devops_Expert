@@ -1,21 +1,15 @@
-from selenium.webdriver.common.by import By
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from requests import get
+import re
 
 def test_scores_service():
-    url_score = "http://localhost:5000/" 
-    options = Options()
-    options.add_argument('--no-sandbox')
-    options.add_argument('--headless')
-    options.add_argument('--disable-gpu')
-    driver = webdriver.Chrome(options=options)
-    driver.get(url_score)
-    score = int(driver.find_element(By.ID, "score").text)
-    if type(score) == int:
-        assert True
-    else:
-        assert False
-    driver.quit()
+    url_score = "http://score:5000/"  # service name in docker-compose
+    resp = get(url_score, timeout=10)
+    resp.raise_for_status()
+    m = re.search(r'id="score">(\d+)<', resp.text)
+    assert m is not None, "score element not found in page"
+    score = int(m.group(1))
+    assert isinstance(score, int)
 
 # Run the test function
-test_scores_service()
+if __name__ == '__main__':
+    test_scores_service()

@@ -50,14 +50,15 @@ agent {
         stage('Run') {
               steps {
                 container('docker') {
-                    sh 'cd WorldOfGames && docker-compose up -d'
+                    sh 'cd WorldOfGames && docker-compose up -d --build'
                 }
             }
         }
         stage('Test') {
               steps {
                 container('docker') {
-                    sh 'sleep 5 && pytest WorldOfGames/test.py'
+                    // run tests inside the tester service (same network as score), fail pipeline if tests fail
+                    sh 'cd WorldOfGames && docker-compose run --rm tester'
                 }
             }
         }
