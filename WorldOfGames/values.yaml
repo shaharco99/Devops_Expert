@@ -259,9 +259,9 @@ controller:
   # jmxPort: 4000
   # Optionally configure other ports to expose in the controller container
   extraPorts:
-   - name: selenium
-     port: 4444
-     targetPort: 4444
+  #  - name: selenium
+  #    port: 4444
+  #    targetPort: 4444
    - name: score
      port: 5000
      targetPort: 5000

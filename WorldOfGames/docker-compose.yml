@@ -19,8 +19,12 @@ services:
       - ./:/WorldOfGames
     depends_on:
       - score
-    # install test deps at runtime then run pytest
-    command: ["sh", "-c", "pip install --no-cache-dir -r requirements && pytest -q test.py"]
+    command: >
+      sh -c "
+      ls -la /WorldOfGames &&
+      pip install --no-cache-dir -r /WorldOfGames/requirements &&
+      pytest -v /WorldOfGames/test.py
+      "
     environment:
       - PYTHONUNBUFFERED=1
 

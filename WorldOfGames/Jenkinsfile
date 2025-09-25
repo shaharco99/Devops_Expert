@@ -1,75 +1,178 @@
 properties([
-githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops_Expert.git'),
-pipelineTriggers([githubPush()])])
-pipeline {
-agent {
-    kubernetes {
-      yaml '''
-        apiVersion: v1
-        kind: Pod
-        spec:
-          containers:
-          - name: docker
-            image: shaharco1804/world_of_game
-            command:
-            - cat
-            tty: true
-            volumeMounts:
-             - mountPath: /var/run/docker.sock
-               name: docker-sock
-          volumes:
-          - name: docker-sock
-            hostPath:
-              path: /var/run/docker.sock
-        '''
-    }
-  }
+    githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops_Expert.git'),
+    pipelineTriggers([githubPush()])
+])
 
-   environment {
-       DOCKER_HUB_REPO = "shaharco1804/score_flask"
-       CONTAINER_NAME = "score_flask"
-	   imageVersion = "v${new Date().format('YYYYmmdd')}"
-   }
+pipeline {
+    agent {
+        kubernetes {
+            yaml '''
+                apiVersion: v1
+                kind: Pod
+                spec:
+                  containers:
+                  - name: docker
+                    image: shaharco1804/world_of_game
+                    command:
+                    - cat
+                    tty: true
+                    volumeMounts:
+                     - mountPath: /var/run/docker.sock
+                       name: docker-sock
+                  volumes:
+                  - name: docker-sock
+                    hostPath:
+                      path: /var/run/docker.sock
+            '''
+        }
+    }
+
+    environment {
+        DOCKER_HUB_REPO = "shaharco1804/score_flask"
+        CONTAINER_NAME = "score_flask"
+        imageVersion = "v${new Date().format('YYYYMMdd')}"
+        WORKSPACE_DIR = "WorldOfGames"
+    }
 
     stages {
-		stage('clean') {
-              steps {
+        stage('Workspace Inspection') {
+            steps {
                 container('docker') {
-                    sh 'docker rm -f $CONTAINER_NAME || true'
-                    sh 'docker rm -f selenium || true'
+                    sh '''
+                        echo "=== Workspace Content ==="
+                        ls -la ${WORKSPACE_DIR}
+                        echo "=== Requirements File Check ==="
+                        if [ -f "${WORKSPACE_DIR}/requirements" ]; then
+                            echo "Requirements file exists"
+                            cat ${WORKSPACE_DIR}/requirements
+                        else
+                            echo "ERROR: requirements file is missing!"
+                            exit 1
+                        fi
+                    '''
                 }
             }
         }
+
+        stage('Clean') {
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "=== Cleaning up containers ==="
+                        docker ps -a
+                        docker rm -f ${CONTAINER_NAME} || echo "No container ${CONTAINER_NAME} to remove"
+                        docker rm -f selenium || echo "No container selenium to remove"
+                        echo "=== After cleanup ==="
+                        docker ps -a
+                    '''
+                }
+            }
+        }
+
         stage('Build') {
-              steps {
+            steps {
                 container('docker') {
-                    sh 'docker build -t $DOCKER_HUB_REPO:$imageVersion --pull WorldOfGames/'
+                    sh '''
+                        echo "=== Building Docker Image ==="
+                        cd ${WORKSPACE_DIR}
+                        docker build -t ${DOCKER_HUB_REPO}:${imageVersion} --pull . --no-cache
+                        echo "=== Image Details ==="
+                        docker images | grep ${DOCKER_HUB_REPO}
+                    '''
                 }
             }
         }
+
         stage('Run') {
-              steps {
+            steps {
                 container('docker') {
-                    sh 'cd WorldOfGames && docker-compose up -d --build'
+                    sh '''
+                        echo "=== Starting Services ==="
+                        cd ${WORKSPACE_DIR}
+                        docker-compose down --remove-orphans
+                        docker-compose up -d --build
+                        echo "=== Service Status ==="
+                        docker-compose ps
+                        echo "=== Service Logs ==="
+                        docker-compose logs score
+                    '''
                 }
             }
         }
+
         stage('Test') {
-              steps {
+            steps {
                 container('docker') {
-                    // run tests inside the tester service (same network as score), fail pipeline if tests fail
-                    sh 'cd WorldOfGames && docker-compose run --rm tester'
+                    sh '''
+                        echo "=== Running Tests ==="
+                        cd ${WORKSPACE_DIR}
+                        # Wait for service to be ready
+                        echo "Waiting for score service to be ready..."
+                        timeout=30
+                        while ! curl -s http://localhost:5000 > /dev/null; do
+                            if [ "$timeout" -le "0" ]; then
+                                echo "Timeout waiting for score service"
+                                docker-compose logs score
+                                exit 1
+                            fi
+                            echo "Waiting... ($timeout seconds left)"
+                            sleep 1
+                            timeout=$((timeout-1))
+                        done
+                        
+                        echo "=== Test Environment Setup ==="
+                        echo "Current directory: $(pwd)"
+                        ls -la
+                        
+                        echo "=== Running Tests ==="
+                        docker-compose run --rm tester
+                        
+                        echo "=== Test Logs ==="
+                        docker-compose logs tester
+                    '''
                 }
             }
         }
+
         stage('Finalize') {
             steps {
                 container('docker') {
-                    withDockerRegistry([ credentialsId: "dockerhub", url: "" ])
-                    {
-                        sh 'docker push $DOCKER_HUB_REPO:$imageVersion'
+                    withDockerRegistry([ credentialsId: "dockerhub", url: "" ]) {
+                        sh '''
+                            echo "=== Pushing Image to Registry ==="
+                            docker push ${DOCKER_HUB_REPO}:${imageVersion}
+                            echo "=== Cleanup ==="
+                            docker-compose down --remove-orphans
+                        '''
                     }
                 }
+            }
+        }
+    }
+
+    post {
+        always {
+            container('docker') {
+                sh '''
+                    echo "=== Cleanup ==="
+                    cd ${WORKSPACE_DIR}
+                    docker-compose down --remove-orphans
+                    docker ps -a
+                '''
+            }
+        }
+        failure {
+            container('docker') {
+                sh '''
+                    echo "=== Debug Information on Failure ==="
+                    cd ${WORKSPACE_DIR}
+                    echo "Docker Compose Logs:"
+                    docker-compose logs
+                    echo "Docker Container Status:"
+                    docker ps -a
+                    echo "Workspace Contents:"
+                    ls -la
+                '''
             }
         }
     }
