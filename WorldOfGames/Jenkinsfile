@@ -60,7 +60,6 @@ pipeline {
                     sh '''
                         echo "=== Cleaning up containers ==="
                         docker rm -f ${CONTAINER_NAME} || echo "No container ${CONTAINER_NAME} to remove"
-                        docker rm -f selenium || echo "No container selenium to remove"
                     '''
                 }
             }
@@ -71,8 +70,7 @@ pipeline {
                 container('docker') {
                     sh '''
                         echo "=== Building Docker Image ==="
-                        cd ${WORKSPACE_DIR}
-                        docker build -t ${DOCKER_HUB_REPO}:${imageVersion} --pull . --no-cache
+                        docker build -t ${DOCKER_HUB_REPO}:${imageVersion} --pull WorldOfGames/. --no-cache
                         echo "=== Image Details ==="
                         docker images | grep ${DOCKER_HUB_REPO}
                     '''
@@ -85,7 +83,6 @@ pipeline {
                 container('docker') {
                     sh '''
                         echo "=== Starting Services ==="
-                        cd ${WORKSPACE_DIR}
                         docker-compose down --remove-orphans
                         docker-compose up -d --build
                         echo "=== Service Logs ==="
@@ -100,15 +97,11 @@ pipeline {
                 container('docker') {
                     sh '''
                         echo "=== Running Tests ==="
-                        cd ${WORKSPACE_DIR}
-                        
                         echo "=== Test Environment Setup ==="
                         echo "Current directory: $(pwd)"
                         ls -la
-                        
                         echo "=== Running Tests ==="
                         docker-compose run --rm tester
-                        
                         echo "=== Test Logs ==="
                         docker-compose logs tester
                     '''
@@ -135,26 +128,25 @@ pipeline {
     post {
         always {
             container('docker') {
-                sh '''
-                    echo "=== Cleanup ==="
-                    cd ${WORKSPACE_DIR}
-                    docker-compose down --remove-orphans
-                '''
-            }
-        }
-        failure {
-            container('docker') {
-                sh '''
-                    echo "=== Debug Information on Failure ==="
-                    cd ${WORKSPACE_DIR}
-                    echo "Docker Compose Logs:"
-                    docker-compose logs
-                    echo "Docker Container Status:"
-                    docker ps -a
-                    echo "Workspace Contents:"
-                    ls -la
-                '''
-            }
-        }
-    }
-}
+                always {
+                    container('docker') {
+                        sh '''
+                            echo "=== Cleanup ==="
+                            docker-compose down --remove-orphans
+                            docker ps -a
+                        '''
+                    }
+                }
+                failure {
+                    container('docker') {
+                        sh '''
+                            echo "=== Debug Information on Failure ==="
+                            echo "Docker Compose Logs:"
+                            docker-compose logs
+                            echo "Docker Container Status:"
+                            docker ps -a
+                            echo "Workspace Contents:"
+                            ls -la
+                        '''
+                    }
+                }

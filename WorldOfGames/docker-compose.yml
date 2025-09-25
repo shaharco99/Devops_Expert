@@ -21,9 +21,12 @@ services:
       - score
     command: >
       sh -c "
-      ls -la /WorldOfGames &&
-      pip install --no-cache-dir -r requirements &&
-      pytest -v test.py
+      echo '=== Listing /WorldOfGames ===';
+      ls -la /WorldOfGames;
+      echo '=== Listing /WorldOfGames/requirements* ===';
+      ls -la /WorldOfGames/requirements* || true;
+      pip install --no-cache-dir -r /WorldOfGames/requirements &&
+      pytest -v /WorldOfGames/test.py
       "
     environment:
       - PYTHONUNBUFFERED=1
