@@ -5,5 +5,5 @@ panda
 CurrencyConverter
 werkzeug
 pathlib
-selenium
+playwright
 pytest
