@@ -1,93 +1,128 @@
-# ArgoCD, explained like you've never touched Kubernetes before
+# ArgoCD & GitOps Deployment
 
-## The problem it solves
+## Overview
 
-Old way (what this project used to do): Jenkins builds the Docker image, then
-Jenkins itself runs `docker-compose up` to put the new version live. Jenkins is
-both the builder *and* the one pushing the button to deploy.
+This project deploys to Kubernetes using ArgoCD, a declarative GitOps
+continuous-delivery controller. Git is the single source of truth for
+cluster state; ArgoCD continuously reconciles the live cluster against the
+manifests in this repository and corrects drift automatically.
 
-Problem with that: nobody else can see what's actually running without asking
-Jenkins. If someone changes something on the live server by hand, there's no
-record of it. And Jenkins needs deep access to the production environment just
-to do its job.
+This supersedes the previous deployment model, in which Jenkins ran
+`docker-compose up` directly against the target environment. That model
+coupled the CI pipeline to deployment authority and left cluster state with
+no audit trail independent of Jenkins' own logs.
 
-## The GitOps idea
+## GitOps Model
 
-ArgoCD flips it around: **a Git repo is the single source of truth for what
-should be running.** Not a Jenkins log, not someone's memory of what they
-typed — a folder of YAML files in Git.
+GitOps applies three properties to deployment:
 
-ArgoCD's whole job is to sit there, watch that folder, and constantly check
-one thing: *"does the cluster match what's in Git?"* If it doesn't match, it
-fixes the cluster to match. That's it. It never asks "what should I build" —
-it only asks "does reality match the file."
+1. **Declarative** — desired state is expressed as data (Kubernetes YAML),
+   not as a sequence of imperative commands.
+2. **Versioned and auditable** — desired state lives in Git. Every change to
+   what runs in the cluster has a commit, an author, and a diff.
+3. **Pulled, not pushed** — the deployment agent (ArgoCD) runs inside the
+   target cluster and pulls changes from Git. No external CI system holds
+   direct write credentials to the cluster.
 
-## How it works, mechanically
+ArgoCD's reconciliation loop compares two states — Git (desired) and the
+live cluster (actual) — and converges the latter toward the former. It does
+not build artifacts, run tests, or make deployment decisions; its sole
+responsibility is convergence.
 
-1. You write Kubernetes YAML files describing what you want running
-   (`manifests/postgres.yaml`, `manifests/score-flask.yaml` in this repo).
-2. You tell ArgoCD "watch this repo, this folder, this branch" — that's the
-   `manifests/argocd-application.yaml` file.
-3. ArgoCD polls the repo (every few minutes, or instantly via webhook) and
-   compares the YAML there against what's actually deployed.
-4. Mismatch → ArgoCD applies the YAML from Git to the cluster automatically
-   (this project has `selfHeal: true`, so it also undoes any manual changes
-   someone makes directly on the cluster — Git always wins).
-
-Jenkins' job shrinks to: build the image, push it to Docker Hub, then edit
-*one line* in a YAML file (the image tag) and push that to Git. Jenkins never
-touches the cluster. ArgoCD notices the file changed and does the actual
-deploying.
+## Architecture
 
 ```
-you push code → Jenkins builds+tests+pushes image → Jenkins bumps the
-image tag in manifests/score-flask.yaml and pushes to Git → ArgoCD notices
-the file changed → ArgoCD applies it to the cluster
+developer commit
+      │
+      ▼
+Jenkins CI  ── build, test, scan, push image to Docker Hub
+      │
+      ▼
+Jenkins bumps the image tag in manifests/score-flask.yaml, commits, pushes
+      │
+      ▼
+Git (main)  ── source of truth
+      │
+      ▼  (polled continuously)
+ArgoCD  ── diffs live cluster state against manifests/
+      │
+      ▼  (on drift)
+Kubernetes cluster reconciled to match Git
 ```
 
-## How it's wired up in this project
+Jenkins' write access is scoped to the Git repository only. It never
+authenticates against the Kubernetes API and holds no cluster credentials.
+ArgoCD is the sole actor with apply/delete authority over the
+`world-of-games` namespace.
 
-- **`manifests/`** — the "desired state" folder ArgoCD watches. Contains:
-  - `namespace.yaml` — the `world-of-games` namespace everything lives in.
-  - `postgres.yaml` — the score database (Deployment + PVC + Service).
-    Single replica only — SQLite-style single-writer isn't the reason here,
-    it's that a plain PVC can only attach to one pod at a time.
-  - `postgres-secret.yaml` — DB credentials. **Placeholder values, not real
-    secrets** — see the warning comment in that file before using this
-    against anything that matters.
-  - `score-flask.yaml` — the website itself (Deployment + Service). Two
-    replicas, because the score now lives in Postgres instead of a local
-    file, so any replica can serve any request.
-  - `argocd-application.yaml` — the ArgoCD `Application` object. This is the
-    one file that isn't "app state," it's "instructions telling ArgoCD what
-    to watch." Applied once, by hand, into the `argocd` namespace — it's not
-    itself synced by ArgoCD (see its `directory.exclude`).
-- **Jenkinsfile, `Deploy (bump manifest)` stage** — after a successful
-  build+test+push, `sed`-replaces the image tag in `manifests/score-flask.yaml`
-  and pushes that single-line change to `main`. This is the *only* deploy
-  action Jenkins takes; everything after that is ArgoCD's job.
-- **ArgoCD itself** — installed with Helm into the `argocd` namespace,
-  same pattern as the Jenkins install (`helm install argocd argo/argo-cd -n
-  argocd`). Not checked into this repo as a values file yet — it was
-  installed with chart defaults.
+## Repository Layout
 
-## Seeing it for yourself
+| Path | Resource | Notes |
+|---|---|---|
+| `manifests/namespace.yaml` | `Namespace` | `world-of-games` |
+| `manifests/postgres.yaml` | `Deployment`, `PersistentVolumeClaim`, `Service` | Single replica by design — the PVC is `ReadWriteOnce`, so only one pod may mount it concurrently. `Recreate` deployment strategy avoids a two-pod overlap during rollout. |
+| `manifests/postgres-secret.yaml` | `Secret` | Placeholder credentials committed for demo/local-cluster use only. Replace with sealed-secrets, SOPS, or an external secret manager before use against any non-ephemeral environment. |
+| `manifests/score-flask.yaml` | `Deployment`, `Service` | Two replicas. Statelessness is a direct consequence of the Postgres migration (`Score.py`) — prior SQLite-file storage made horizontal scaling unsafe. |
+| `manifests/argocd-application.yaml` | ArgoCD `Application` | The control object, not application state. Applied once, manually, into the `argocd` namespace. Excluded from ArgoCD's own sync scope (`spec.source.directory.exclude`) to prevent the controller from managing its own definition. |
+
+## Sync Policy
+
+The `Application` resource (`manifests/argocd-application.yaml`) is
+configured with:
+
+```yaml
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+  syncOptions:
+    - CreateNamespace=true
+```
+
+- **`automated`** — sync runs on detected drift without manual approval.
+- **`prune: true`** — resources removed from Git are deleted from the
+  cluster on the next sync, keeping cluster state a strict mirror of Git.
+- **`selfHeal: true`** — out-of-band changes to live resources (e.g. a
+  manual `kubectl scale` or `kubectl edit`) are reverted on the next
+  reconciliation pass. This was verified directly against the running
+  cluster: scaling `score-flask` from 2 to 5 replicas via `kubectl scale`
+  was reverted by ArgoCD within one reconciliation interval, with no manual
+  intervention.
+
+## Operational Notes
+
+**Installation.** ArgoCD runs in-cluster, installed via the Argo Helm chart
+into its own `argocd` namespace — consistent with how Jenkins itself is
+installed (`values.yaml`, `helm install jenkins jenkins/jenkins`). Chart
+defaults are in effect; no values file is currently checked into this repo.
+
+**Deploy path.** The `Deploy (bump manifest)` stage in `Jenkinsfile` is the
+only point at which the pipeline touches deployment state, and it does so
+by editing a single line (the image tag) in `manifests/score-flask.yaml`
+and pushing to `main`. It does not invoke `kubectl`, `helm`, or the
+Kubernetes API in any form.
+
+**Rollback.** Because deploy state is a Git history, rollback is a Git
+operation. ArgoCD's History and Rollback view exposes every prior sync,
+keyed to its commit SHA, and can revert the live cluster to any of them
+without a corresponding Git revert — though a Git revert is the
+recommended path to keep desired state and applied state consistent for
+future syncs.
+
+**Access.**
 
 ```bash
 kubectl port-forward svc/argocd-server -n argocd 8080:443
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
 ```
 
-Open `https://localhost:8080`, log in as `admin` with:
+Authenticate as `admin` at `https://localhost:8080`. The initial admin
+secret should be deleted after a real login mechanism (SSO/Dex, or a
+rotated local user) is configured, per the Argo project's own guidance.
 
-```bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
+## References
 
-You'll see the `world-of-games` Application, its sync status, and a live
-diagram of every resource it manages.
-
-## Where to look next
-
-- **`readme.md`** — the plain-English overview of the whole project.
-- **`manifests/`** — the actual YAML ArgoCD watches.
-- **`CLAUDE.md`** — deeper technical map of the codebase.
+- `readme.md` — project overview.
+- `manifests/` — the desired-state manifests ArgoCD reconciles against.
+- `CLAUDE.md` — codebase architecture reference.
