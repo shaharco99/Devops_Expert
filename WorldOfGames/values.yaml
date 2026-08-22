@@ -35,8 +35,14 @@ controller:
     # Pinned explicitly to the latest LTS at time of writing, to pick up
     # fixes for known core CVEs (was floating on the chart's default
     # AppVersion, which had two published security bulletins outstanding).
-    # Bump when https://www.jenkins.io/changelog-stable/ lists a newer LTS.
-    tag: "2.578"
+    # Bump when https://www.jenkins.io/changelog-stable/ lists a newer LTS -
+    # NOT to whatever Dependabot proposes: it bumped this to 2.578 (a
+    # mainline weekly release, not LTS) on 2026-08-22, since Dependabot's
+    # docker-ecosystem updater tracks the newest tag on the registry with no
+    # concept of an LTS line. See .github/dependabot.yml - ignore rule added
+    # for this key specifically. Check the LTS changelog before merging any
+    # future PR touching this line.
+    tag: "2.568.2"
     # -- Controller image tag label (only used when `tag` above is unset)
     tagLabel: jdk21
     # -- Controller image pull policy

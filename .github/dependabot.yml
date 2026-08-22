@@ -14,6 +14,13 @@ updates:
     directory: "/WorldOfGames"
     schedule:
       interval: "weekly"
+    ignore:
+      # jenkins/jenkins in values.yaml must stay on the LTS line (X.Y.Z, e.g.
+      # 2.568.2), not the newest tag on the registry - Dependabot has no
+      # concept of "LTS" and previously proposed 2.578 (a mainline weekly
+      # release). Bump this manually against
+      # https://www.jenkins.io/changelog-stable/ instead.
+      - dependency-name: "jenkins/jenkins"
 
   - package-ecosystem: "docker"
     directory: "/WorldOfGames/jenkinsslave"
