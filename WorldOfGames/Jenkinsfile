@@ -54,6 +54,17 @@ pipeline {
             }
         }
 
+        stage('Secrets Scan') {
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "=== Scanning for leaked secrets ==="
+                        gitleaks detect --source . -v
+                    '''
+                }
+            }
+        }
+
         stage('Clean') {
             steps {
                 container('docker') {

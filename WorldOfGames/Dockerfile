@@ -16,6 +16,10 @@ COPY . /WorldOfGames/
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements
 
+# Run as non-root
+RUN adduser -D appuser && chown -R appuser:appuser /WorldOfGames
+USER appuser
+
 # Expose port
 EXPOSE 5000
 

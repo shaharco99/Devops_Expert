@@ -1,4 +1,5 @@
 # run with commend : flask --app MainScores.py run
+import os
 import werkzeug
 from flask import Flask, render_template , request, redirect ,url_for
 from Score import read_score
@@ -38,13 +39,17 @@ def savegame():
 
 @app.route('/process_input', methods=['POST'])
 def process_input():
-    game_chosen = int(request.form['game_chosen'])
+    game_chosen = request.form.get('game_chosen', '')
+    if not game_chosen.isdigit():
+        return render_template('err500.html'), 400
+    game_chosen = int(game_chosen)
     if game_chosen == 1:
         return redirect(url_for('memorygame'))
     elif game_chosen == 2:
         return redirect(url_for('guessgame'))
     elif game_chosen == 3:
         return redirect(url_for('currency'))
+    return render_template('err500.html'), 400
 
 
 @app.errorhandler(werkzeug.exceptions.BadRequest)
@@ -55,4 +60,5 @@ def handle_bad_request(e):
 app.register_error_handler(500, handle_bad_request)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='5000', debug=True)
+    debug = os.environ.get('FLASK_DEBUG', '0') == '1'
+    app.run(host='0.0.0.0', port='5000', debug=debug)

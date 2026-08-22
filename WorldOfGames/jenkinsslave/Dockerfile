@@ -9,12 +9,14 @@ ARG packages='python3 python3-pip wget unzip telnet iputils-ping'
 # host socket keep working regardless of what the base image ships.
 ARG docker_cli_version=27.3.1
 ARG docker_compose_version=2.29.7
+ARG gitleaks_version=8.21.2
 
 # Use an the image from variables
 FROM ${image_name}:${image_version}
 ARG packages
 ARG docker_cli_version
 ARG docker_compose_version
+ARG gitleaks_version
 RUN apt-get update -y
 RUN apt -f install -y
 RUN apt-get install -y ${packages} ca-certificates curl
@@ -30,3 +32,9 @@ RUN rm -f /usr/local/bin/docker /usr/local/bin/docker-compose && \
     curl -fsSL "https://github.com/docker/compose/releases/download/v${docker_compose_version}/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose && \
     chmod +x /usr/local/bin/docker /usr/local/bin/docker-compose && \
     docker --version && docker-compose --version
+
+RUN curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${gitleaks_version}/gitleaks_${gitleaks_version}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz && \
+    tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks && \
+    rm -f /tmp/gitleaks.tar.gz && \
+    chmod +x /usr/local/bin/gitleaks && \
+    gitleaks version
