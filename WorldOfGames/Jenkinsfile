@@ -202,6 +202,32 @@ pipeline {
                 }
             }
         }
+
+        // Deploy step: bump the image tag in the manifest repo and push.
+        // ArgoCD (watching this path with automated sync) picks up the
+        // commit and applies it to the cluster - Jenkins no longer runs
+        // docker-compose against a live "prod" target.
+        stage('Deploy (bump manifest)') {
+            steps {
+                container('docker') {
+                    withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+                        sh '''
+                            cd ${WORKSPACE_DIR}
+                            sed -i "s|image: ${DOCKER_HUB_REPO}:.*|image: ${DOCKER_HUB_REPO}:${imageVersion}|" manifests/score-flask.yaml
+                            git config user.email "jenkins@ci"
+                            git config user.name "jenkins"
+                            git add manifests/score-flask.yaml
+                            if ! git diff --cached --quiet; then
+                                git commit -m "deploy: bump score-flask image to ${imageVersion}"
+                                git push https://${GIT_USER}:${GIT_TOKEN}@github.com/shaharco99/Devops_Expert.git HEAD:main
+                            else
+                                echo "No image tag change to push"
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
     }
 
     post {

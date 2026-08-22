@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: score-flask
+  namespace: world-of-games
+spec:
+  # Stateless now that scores live in Postgres, not a local file - safe to
+  # run more than one replica.
+  replicas: 2
+  selector:
+    matchLabels:
+      app: score-flask
+  template:
+    metadata:
+      labels:
+        app: score-flask
+    spec:
+      containers:
+        - name: score-flask
+          # image tag bumped by Jenkins ("Finalize" stage) on each build -
+          # ArgoCD picks up the change once it's pushed to this repo.
+          image: shaharco1804/score_flask:v20260822
+          ports:
+            - containerPort: 5000
+          env:
+            - name: FLASK_RUN_HOST
+              value: "0.0.0.0"
+            - name: FLASK_RUN_PORT
+              value: "5000"
+            - name: POSTGRES_HOST
+              value: postgres
+            - name: POSTGRES_PORT
+              value: "5432"
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: score-flask
+  namespace: world-of-games
+spec:
+  selector:
+    app: score-flask
+  ports:
+    - port: 80
+      targetPort: 5000
+  type: ClusterIP

@@ -1,23 +1,33 @@
-import sqlite3
-from pathlib import Path
+import os
 
-db_file_name = Path(__file__).parent / "scores.db"
-legacy_scores_file_name = Path(__file__).parent / "Scores.txt"
+import pg8000.dbapi
+
+# pg8000 is pure-python (no libpq/gcc needed on alpine, unlike psycopg2).
+DB_HOST = os.environ.get("POSTGRES_HOST", "localhost")
+DB_PORT = int(os.environ.get("POSTGRES_PORT", "5432"))
+DB_NAME = os.environ.get("POSTGRES_DB", "wog")
+DB_USER = os.environ.get("POSTGRES_USER", "wog")
+DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "wog")
 
 
 def _get_connection():
-    conn = sqlite3.connect(db_file_name, timeout=30)
-    conn.execute(
+    conn = pg8000.dbapi.connect(
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+    )
+    cur = conn.cursor()
+    cur.execute(
         "CREATE TABLE IF NOT EXISTS scores (id INTEGER PRIMARY KEY, value INTEGER NOT NULL)"
     )
-    row = conn.execute("SELECT value FROM scores WHERE id = 1").fetchone()
+    cur.execute("SELECT value FROM scores WHERE id = 1")
+    row = cur.fetchone()
     if row is None:
-        # One-time migration from the old Scores.txt flat file, if present.
-        initial_value = 0
-        if legacy_scores_file_name.exists():
-            initial_value = int(legacy_scores_file_name.read_text().strip() or 0)
-        conn.execute("INSERT INTO scores (id, value) VALUES (1, ?)", (initial_value,))
-        conn.commit()
+        cur.execute("INSERT INTO scores (id, value) VALUES (1, 0)")
+    conn.commit()
+    cur.close()
     return conn
 
 
@@ -26,13 +36,16 @@ def add_score(diff):
     points = (diff * 3) + 5
     conn = _get_connection()
     try:
+        cur = conn.cursor()
         # Atomic increment in a single statement - avoids the read-then-write
         # race a Python-side "read score, add, write score" would have under
         # concurrent calls (verified: with a separate read+write, 20 concurrent
         # add_score(1) calls lost most of their updates; this doesn't).
-        conn.execute("UPDATE scores SET value = value + ? WHERE id = 1", (points,))
+        cur.execute("UPDATE scores SET value = value + %s WHERE id = 1", (points,))
+        cur.execute("SELECT value FROM scores WHERE id = 1")
+        new_score = cur.fetchone()[0]
         conn.commit()
-        new_score = conn.execute("SELECT value FROM scores WHERE id = 1").fetchone()[0]
+        cur.close()
         print(f"your new score is {new_score}")
     finally:
         conn.close()
@@ -42,7 +55,10 @@ def read_score():
     """read the score"""
     conn = _get_connection()
     try:
-        row = conn.execute("SELECT value FROM scores WHERE id = 1").fetchone()
+        cur = conn.cursor()
+        cur.execute("SELECT value FROM scores WHERE id = 1")
+        row = cur.fetchone()
+        cur.close()
         return row[0]
     finally:
         conn.close()

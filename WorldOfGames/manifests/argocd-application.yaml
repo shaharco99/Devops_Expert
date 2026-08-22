@@ -1,0 +1,24 @@
+# Apply this once, into the cluster running ArgoCD (not into world-of-games):
+#   kubectl apply -n argocd -f manifests/argocd-application.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: world-of-games
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/shaharco99/Devops_Expert.git
+    targetRevision: main
+    path: WorldOfGames/manifests
+    directory:
+      exclude: "argocd-application.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: world-of-games
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
