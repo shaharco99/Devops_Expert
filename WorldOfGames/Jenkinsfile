@@ -59,6 +59,7 @@ pipeline {
                 container('docker') {
                     sh '''
                         echo "=== Scanning for leaked secrets ==="
+                        git config --global --add safe.directory "$(pwd)"
                         gitleaks detect --source . -v
                     '''
                 }
