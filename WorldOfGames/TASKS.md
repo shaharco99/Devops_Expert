@@ -24,16 +24,18 @@ All changes committed + pushed to `origin/main` (commits `f6c625e`, `a251975`). 
 
 **Still true / not addressed**: the underlying architecture flaw (Jenkins agent mounts host's `/var/run/docker.sock`) still exists — it's what caused the tester bind-mount bug above, and it's still the security risk flagged below (container-escape risk). Today's fix worked around it (bake-in instead of bind-mount) rather than removing the host-socket dependency. That item is still open.
 
-## Quick wins (S, do first)
+## Quick wins (S, do first) — ALL DONE 2026-08-22
 
-- [ ] Remove `debug=True` in `MainScores.py:58`. Gate via env var, default off. RCE risk (Werkzeug debugger).
-- [ ] Add `.gitignore` (`__pycache__`, `.venv`, `*.pyc`, `.env`).
-- [ ] Add `LICENSE`.
-- [ ] Pin all deps in `requirements` and `jenkinsslave/requirements` (exact versions).
-- [ ] Add gitleaks/trufflehog: pre-commit hook + CI stage.
-- [ ] Fix `jenkinsslave/Dockerfile`: delete bare `RUN telnet` line (dead/hangs build). Drop `telnet` from `packages` arg.
-- [ ] Add input validation in `MainScores.py` `process_input` route (`int(request.form['game_chosen'])` uncaught ValueError today).
-- [ ] Add non-root `USER` to `Dockerfile` and `jenkinsslave/Dockerfile` (both run root now).
+- [x] Removed `debug=True` in `MainScores.py`. Now gated via `FLASK_DEBUG=1` env var, off by default.
+- [x] Added `.gitignore`.
+- [x] Added `LICENSE` (MIT).
+- [x] Pinned all deps in `requirements` and `jenkinsslave/requirements` to exact versions verified working in CI.
+- [x] Added gitleaks: `.pre-commit-config.yaml` locally + `Secrets Scan` Jenkinsfile stage (before Clean/Build). Needed `git` binary added to the agent image (gitleaks shells out to it) and `git config --global --add safe.directory` (workspace UID mismatch made it silently no-op a "clean" scan otherwise — caught via commit-count sanity check, confirmed real scan on build #10: 54 commits, no leaks).
+- [x] Removed dead `RUN telnet` line from `jenkinsslave/Dockerfile` (done earlier, during pipeline-fix work).
+- [x] Added input validation to `MainScores.py` `process_input` (was uncaught `ValueError` on non-digit input, now clean 400).
+- [x] Non-root `USER` added to app `Dockerfile` (verified: runs as `appuser`, score read/write still works). `jenkinsslave/Dockerfile` intentionally left root — needs the mounted host Docker socket to function; tied to the socket-mount architecture item below.
+
+All verified via live pipeline run (build #10, SUCCESS) and local `docker build`/`docker run` tests before pushing.
 
 ## Priority list (ordered, risk/effort)
 
