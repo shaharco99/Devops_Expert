@@ -12,8 +12,8 @@ This readme explains everything like you've never touched Docker or Jenkins befo
   a game. Built with Flask (a small Python web framework).
 - **The games** (`games/`, run via `MainGame.py`): play them in your terminal, not the
   browser. Winning adds points to your score.
-- **The score** (`Score.py`): a tiny SQLite database file (`scores.db`) that remembers
-  your score, even after a restart.
+- **The score** (`Score.py`): lives in a Postgres database, so it survives restarts and
+  can be read/written by more than one copy of the website at once.
 - **Jenkins** (`Jenkinsfile`, `values.yaml`): a robot that watches this GitHub repo. Every
   time someone pushes code, it automatically: checks for leaked passwords, checks the
   code style, checks for known security bugs in dependencies, builds the website into a
@@ -111,3 +111,6 @@ gets published.
 - **`SECURITY.md`** — what's scanned, what isn't, and the one known architecture risk
   (the Jenkins agent needs access to Docker itself to build images, which is a common
   but real security tradeoff — explained there in more detail).
+- **`ARGOCD.md`** — how the website actually gets deployed to Kubernetes: Jenkins builds
+  and pushes the image, then ArgoCD (not Jenkins) is the one that puts it live, by
+  watching this repo's `manifests/` folder.
