@@ -12,10 +12,6 @@ properties([
     ])
 ])
 
-// Set by the 'Skip CI Check' stage when HEAD is a Jenkins-authored deploy
-// commit (manifest image-tag bump) - see that stage for why.
-def skipBuild = false
-
 pipeline {
     agent {
         kubernetes {
@@ -48,27 +44,7 @@ pipeline {
     }
 
     stages {
-        // The 'Deploy (bump manifest)' stage pushes to main, which
-        // pollSCM/githubPush would otherwise pick up as a new commit and
-        // re-trigger this whole pipeline forever. That commit is tagged
-        // "[skip ci]"; this stage checks for it and short-circuits the rest
-        // of the run before it does any real work.
-        stage('Skip CI Check') {
-            steps {
-                container('docker') {
-                    script {
-                        def lastMsg = sh(script: 'cd ${WORKSPACE_DIR} && git log -1 --pretty=%B', returnStdout: true).trim()
-                        if (lastMsg.contains('[skip ci]')) {
-                            echo "HEAD is a deploy-only commit (${lastMsg.readLines()[0]}) - skipping the rest of the pipeline"
-                            skipBuild = true
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Workspace Inspection') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -88,7 +64,6 @@ pipeline {
         }
 
         stage('Secrets Scan') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -101,7 +76,6 @@ pipeline {
         }
 
         stage('Lint') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -114,7 +88,6 @@ pipeline {
         }
 
         stage('Format Check') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -127,7 +100,6 @@ pipeline {
         }
 
         stage('Dependency Audit') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -140,7 +112,6 @@ pipeline {
         }
 
         stage('Clean') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -152,7 +123,6 @@ pipeline {
         }
 
         stage('Build') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -166,7 +136,6 @@ pipeline {
         }
 
         stage('Image Scan') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     // Report-only, not gating: python:alpine's own bundled pip
@@ -186,7 +155,6 @@ pipeline {
         }
 
         stage('Run') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -202,7 +170,6 @@ pipeline {
         }
 
         stage('Test') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     sh '''
@@ -221,7 +188,6 @@ pipeline {
         }
 
         stage('Finalize') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     withDockerRegistry([ credentialsId: "dockerhub", url: "" ]) {
@@ -242,7 +208,6 @@ pipeline {
         // commit and applies it to the cluster - Jenkins no longer runs
         // docker-compose against a live "prod" target.
         stage('Deploy (bump manifest)') {
-            when { expression { !skipBuild } }
             steps {
                 container('docker') {
                     withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
@@ -253,7 +218,7 @@ pipeline {
                             git config user.name "jenkins"
                             git add manifests/score-flask.yaml
                             if ! git diff --cached --quiet; then
-                                git commit -m "deploy: bump score-flask image to ${imageVersion} [skip ci]"
+                                git commit -m "deploy: bump score-flask image to ${imageVersion}"
                                 git push https://${GIT_USER}:${GIT_TOKEN}@github.com/shaharco99/Devops_Expert.git HEAD:main
                             else
                                 echo "No image tag change to push"

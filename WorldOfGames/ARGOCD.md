@@ -71,17 +71,6 @@ the file changed → ArgoCD applies it to the cluster
   argocd`). Not checked into this repo as a values file yet — it was
   installed with chart defaults.
 
-## Why the deploy commit says `[skip ci]`
-
-Jenkins pushing to `main` would normally trigger Jenkins again (`pollSCM`
-checks for new commits every minute) — an infinite loop of Jenkins building,
-deploying, triggering itself, building again. The deploy commit's message
-includes `[skip ci]`; the `Skip CI Check` stage (first thing the pipeline
-runs) checks the latest commit message for that marker and, if found, skips
-every other stage. The build still technically starts (Jenkins has no way to
-know that *before* checking out the commit), but it does nothing beyond that
-first check.
-
 ## Seeing it for yourself
 
 ```bash
