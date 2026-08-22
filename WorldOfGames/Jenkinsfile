@@ -70,8 +70,9 @@ pipeline {
             steps {
                 container('docker') {
                     sh '''
+                        cd ${WORKSPACE_DIR}
                         echo "=== Linting Python source ==="
-                        ruff check ${WORKSPACE_DIR}
+                        ruff check .
                     '''
                 }
             }
@@ -81,8 +82,9 @@ pipeline {
             steps {
                 container('docker') {
                     sh '''
+                        cd ${WORKSPACE_DIR}
                         echo "=== Checking formatting ==="
-                        black --check ${WORKSPACE_DIR}
+                        black --check .
                     '''
                 }
             }
@@ -92,8 +94,9 @@ pipeline {
             steps {
                 container('docker') {
                     sh '''
+                        cd ${WORKSPACE_DIR}
                         echo "=== Auditing dependencies for known CVEs ==="
-                        pip-audit -r ${WORKSPACE_DIR}/requirements
+                        pip-audit -r requirements
                     '''
                 }
             }
