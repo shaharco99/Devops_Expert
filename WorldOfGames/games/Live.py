@@ -1,6 +1,8 @@
 def welcome(name):
     """This function greets the user with his name"""
-    print(f"Hello {name} and welcome to the Word of Games(Wog).\nHere you can find many cool games to play.")
+    print(
+        f"Hello {name} and welcome to the Word of Games(Wog).\nHere you can find many cool games to play."
+    )
 
 
 def load_game():
@@ -28,9 +30,13 @@ def valid_num(minimum, maximum, item):
                 if minimum <= int(item) <= maximum:
                     return item
                 else:
-                    item = input(f"please enter a number between {minimum} - {maximum}: ")
+                    item = input(
+                        f"please enter a number between {minimum} - {maximum}: "
+                    )
             else:
                 if item == "q":
                     return item
                 else:
-                    item = input(f"your input is not a number, please enter a number between {minimum} - {maximum}: ")
+                    item = input(
+                        f"your input is not a number, please enter a number between {minimum} - {maximum}: "
+                    )

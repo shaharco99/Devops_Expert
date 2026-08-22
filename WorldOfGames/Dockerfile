@@ -1,7 +1,9 @@
 # Set default values for environment variables
 # image version can be changed by "docker build -t shaharco1804/score_flask --build-arg image_version={{new_image_version}}"
+# Pinned to 3.13 (mature, long support runway) rather than the floating
+# "alpine" tag, which silently drifts to whatever Python minor is newest.
 ARG image_name=python
-ARG image_version=alpine
+ARG image_version=3.13-alpine
 
 # Use an the image from variables
 FROM ${image_name}:${image_version}

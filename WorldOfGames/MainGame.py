@@ -1,13 +1,14 @@
-from games import CurrencyRouletteGame, GuessGame, MemoryGame
-from games.Live import welcome,load_game,difficulty
+import sys
 
+from games import CurrencyRouletteGame, GuessGame, MemoryGame
+from games.Live import difficulty, load_game, welcome
 
 name = input("What is your name: ")
 welcome(name)
 while True:
     game = load_game()
     if game == "q":
-        exit()
+        sys.exit()
     diff = int(difficulty())
     if int(game) == 1:
         MemoryGame.play(diff)

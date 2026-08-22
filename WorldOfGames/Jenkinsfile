@@ -66,6 +66,39 @@ pipeline {
             }
         }
 
+        stage('Lint') {
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "=== Linting Python source ==="
+                        ruff check ${WORKSPACE_DIR}
+                    '''
+                }
+            }
+        }
+
+        stage('Format Check') {
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "=== Checking formatting ==="
+                        black --check ${WORKSPACE_DIR}
+                    '''
+                }
+            }
+        }
+
+        stage('Dependency Audit') {
+            steps {
+                container('docker') {
+                    sh '''
+                        echo "=== Auditing dependencies for known CVEs ==="
+                        pip-audit -r ${WORKSPACE_DIR}/requirements
+                    '''
+                }
+            }
+        }
+
         stage('Clean') {
             steps {
                 container('docker') {
@@ -85,6 +118,25 @@ pipeline {
                         docker build -t ${DOCKER_HUB_REPO}:${imageVersion} --pull WorldOfGames/. --no-cache
                         echo "=== Image Details ==="
                         docker images | grep ${DOCKER_HUB_REPO}
+                    '''
+                }
+            }
+        }
+
+        stage('Image Scan') {
+            steps {
+                container('docker') {
+                    // Report-only, not gating: python:alpine's own bundled pip
+                    // ships vendored deps (e.g. pip._vendor.msgpack) that Trivy
+                    // flags as HIGH/fixed even though there's no real standalone
+                    // version to bump from our side (verified: pip install
+                    // --upgrade pip already gives the latest available and
+                    // still trips this). A hard --exit-code gate here would
+                    // permanently block builds on something we can't fix.
+                    // Revisit if/when upstream resolves it.
+                    sh '''
+                        echo "=== Scanning image for known CVEs (report-only) ==="
+                        trivy image --severity HIGH,CRITICAL --ignore-unfixed ${DOCKER_HUB_REPO}:${imageVersion}
                     '''
                 }
             }

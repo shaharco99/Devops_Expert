@@ -1,4 +1,5 @@
 from random import randrange
+
 from games.Live import valid_num
 from Score import add_score
 

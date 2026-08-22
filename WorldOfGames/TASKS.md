@@ -39,13 +39,19 @@ All verified via live pipeline run (build #10, SUCCESS) and local `docker build`
 
 ## Priority list (ordered, risk/effort)
 
-- [ ] Remove Docker socket mount from Jenkins agent pod (`Jenkinsfile` kubernetes yaml, `/var/run/docker.sock`). Replace w/ Kaniko/BuildKit-in-pod or dedicated build node. [M] Container-escape risk, biggest item, needs ADR (architecture decision).
-- [ ] CI stages: lint (`ruff`/`flake8`), format check (`black`), `pip-audit`/`safety`, gate merge. [S/M]
-- [ ] Add Dependabot or Renovate. [S]
-- [ ] Trivy scan both images (app `Dockerfile` + `jenkinsslave/Dockerfile`) in pipeline. [S]
+- [ ] Remove Docker socket mount from Jenkins agent pod (`Jenkinsfile` kubernetes yaml, `/var/run/docker.sock`). Replace w/ Kaniko/BuildKit-in-pod or dedicated build node. [M] Container-escape risk, biggest item, needs ADR (architecture decision). Skipped intentionally 2026-08-22 - needs your sign-off, not a unilateral call.
+- [x] CI stages 2026-08-22: `Lint` (`ruff check`, gate), `Format Check` (`black --check`, gate), `Dependency Audit` (`pip-audit -r requirements`, gate) added to `Jenkinsfile`. Pre-existing lint/format debt across the whole codebase (`MainGame.py`, `Score.py`, `games/*.py`, `test.py`, `MainScores.py`) auto-fixed first (`ruff --fix` + `black`, plus 2 manual fixes: `exit()`→`sys.exit()`, bare `open()`→context manager in `Score.py`) so the gates could go in clean rather than immediately red. `pip-audit`/`ruff`/`black` installed via `uv` (swapped from `pip3`, faster) in `jenkinsslave/Dockerfile`; needed `python3-venv` added too (`pip-audit` creates its own scan venv internally). Verified: both `requirements` files clean, no known CVEs.
+- [x] Add Dependabot. `.github/dependabot.yml` (repo root, since GitHub config lives at the `Devops_Expert` root, not `WorldOfGames/`) - weekly pip + docker ecosystem updates for both `WorldOfGames/` and `WorldOfGames/jenkinsslave/`.
+- [x] Trivy scan added 2026-08-22 - `Image Scan` stage in `Jenkinsfile`, runs after Build. **Report-only, not gating**: found 2 real HIGH findings (`msgpack`, `setuptools`) baked into the `python:alpine`/`python:3.13-alpine` base image's own vendored pip internals - confirmed not fixable via our `requirements` pins or `pip install --upgrade pip` (already latest). A hard `--exit-code` gate would permanently block builds on something we can't actually fix from our side. Revisit if upstream resolves it. Also scanned `jenkinsslave` agent image manually (not wired into CI, since that image isn't rebuilt by the pipeline) - real findings in the statically-downloaded `docker`/`docker-compose` Go binaries (numerous Go-toolchain CVEs), out of scope for today, tracked here as follow-up: consider building those from a Go base with `go install` instead of grabbing prebuilt release tarballs, or pin to whatever release was built with the newest Go toolchain.
 - [ ] Move `Scores.txt` flat-file state (`Score.py`) to real datastore (SQLite min) if multi-replica/durability ever needed. [M]
-- [ ] Strip unneeded packages from `jenkinsslave/Dockerfile` (`wget`, `telnet`, `iputils-ping` not needed at runtime). [S]
-- [ ] Add `SECURITY.md` + threat-model note covering Jenkins docker-socket exposure + credential scope. [S]
+- [x] Strip unneeded packages from `jenkinsslave/Dockerfile` 2026-08-22: dropped `wget`, `telnet`, `iputils-ping` (unused - docker/docker-compose calls use curl, nothing pings/telnets). Kept `unzip` (webdriver_manager needs it) and added `git` (gitleaks needs it for history-mode scans) + `python3-venv` (pip-audit needs it internally).
+- [x] Add `SECURITY.md` 2026-08-22 - covers the Docker-socket-mount risk (links back here), credential scope, and what's actually scanned in CI.
+
+## Base image versions bumped 2026-08-22 (LTS preference)
+
+- App `Dockerfile`: `python:alpine` (floating, was resolving to 3.14) → pinned `python:3.13-alpine` (mature, long support runway, explicit not floating).
+- `jenkinsslave/Dockerfile`: `ubuntu:22.04` → `ubuntu:24.04` (current Ubuntu LTS, longer remaining support window). Needed one fix: Ubuntu 24.04's Python is PEP-668 "externally managed" - added `--break-system-packages` to the `uv pip install --system` call (fine here, this container's only job is being a disposable CI agent).
+- Both verified: full local build + `docker run` functional test + ruff/black/pip-audit re-run clean on the new bases before pushing.
 
 ## Longer-term / needs decision first
 

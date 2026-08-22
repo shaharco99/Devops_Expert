@@ -1,12 +1,13 @@
+from os import system
 from random import randrange
 from time import sleep
+
 from games.Live import valid_num
 from Score import add_score
-from os import system
 
 
 def screen_cleaner():
-    system('clear')
+    system("clear")
 
 
 def generate_sequence(diff):

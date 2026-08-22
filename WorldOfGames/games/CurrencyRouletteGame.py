@@ -1,5 +1,7 @@
-from currency_converter import CurrencyConverter
 from random import randrange
+
+from currency_converter import CurrencyConverter
+
 from games.Live import valid_num
 from Score import add_score
 
@@ -12,7 +14,9 @@ def get_money_interval(diff):
 
 def get_guess_from_user(amount):
     """This function get the user answer"""
-    guess = valid_num(1, 1000, input(f"Enter how much you think {amount} in USD worth in ILS: "))
+    guess = valid_num(
+        1, 1000, input(f"Enter how much you think {amount} in USD worth in ILS: ")
+    )
     return int(guess)
 
 
@@ -21,7 +25,7 @@ def play(diff):
     amount = randrange(1, 100)
     interval = get_money_interval(diff)
     c = CurrencyConverter()
-    total = round(c.convert(amount, 'USD', 'ILS'))
+    total = round(c.convert(amount, "USD", "ILS"))
     maximum = total + interval
     minimum = total - interval
     # # for tests
@@ -32,5 +36,6 @@ def play(diff):
         add_score(diff)
     else:
         from_answer = round(total - guess)
-        print(f"you lost the answer is {total},you were this far from the answer {from_answer}")
-
+        print(
+            f"you lost the answer is {total},you were this far from the answer {from_answer}"
+        )
