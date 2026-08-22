@@ -36,7 +36,7 @@ controller:
     # fixes for known core CVEs (was floating on the chart's default
     # AppVersion, which had two published security bulletins outstanding).
     # Bump when https://www.jenkins.io/changelog-stable/ lists a newer LTS.
-    tag: "2.568.2"
+    tag: "2.578"
     # -- Controller image tag label (only used when `tag` above is unset)
     tagLabel: jdk21
     # -- Controller image pull policy
