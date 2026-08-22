@@ -1,6 +1,15 @@
 properties([
     githubProjectProperty(displayName: '', projectUrlStr: 'https://github.com/shaharco99/Devops_Expert.git'),
-    pipelineTriggers([githubPush()])
+    // githubPush() alone needs GitHub to reach this Jenkins over a public
+    // webhook URL - doesn't work for a local/minikube instance behind a
+    // port-forward with no public address. pollSCM covers that case (checks
+    // GitHub every minute regardless of inbound reachability); keep
+    // githubPush() too so a real webhook (once one's reachable) triggers
+    // instantly instead of waiting up to a minute.
+    pipelineTriggers([
+        githubPush(),
+        pollSCM('* * * * *')
+    ])
 ])
 
 pipeline {
