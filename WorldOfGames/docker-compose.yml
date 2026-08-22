@@ -13,23 +13,11 @@ services:
     # volumes:
     #   - ./:/WorldOfGames
   tester:
-    image: python:slim
-    working_dir: /WorldOfGames
-    volumes:
-      - ./:/WorldOfGames
+    build:
+      context: .
+      dockerfile: Dockerfile.tester
     depends_on:
       - score
-    command: >
-      sh -c "
-      echo '=== Listing /WorldOfGames ===';
-      ls -la /WorldOfGames;
-      echo '=== Listing /WorldOfGames/requirements* ===';
-      ls -la /WorldOfGames/requirements* || true;
-      pip install --no-cache-dir -r /WorldOfGames/requirements &&
-      pytest -v /WorldOfGames/test.py
-      "
-    environment:
-      - PYTHONUNBUFFERED=1
 
 volumes:
   score:

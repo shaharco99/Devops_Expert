@@ -1,0 +1,14 @@
+# image version can be changed by "docker build --build-arg image_version={{new_image_version}}"
+ARG image_name=python
+ARG image_version=slim
+
+FROM ${image_name}:${image_version}
+
+WORKDIR /WorldOfGames
+
+COPY test.py requirements ./
+RUN pip install --no-cache-dir -r requirements
+
+ENV PYTHONUNBUFFERED=1
+
+CMD ["pytest", "-v", "test.py"]
