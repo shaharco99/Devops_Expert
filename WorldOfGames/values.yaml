@@ -32,8 +32,12 @@ controller:
     # -- Controller image repository
     repository: "jenkins/jenkins"
 
-    tag:
-    # -- Controller image tag label
+    # Pinned explicitly to the latest LTS at time of writing, to pick up
+    # fixes for known core CVEs (was floating on the chart's default
+    # AppVersion, which had two published security bulletins outstanding).
+    # Bump when https://www.jenkins.io/changelog-stable/ lists a newer LTS.
+    tag: "2.568.2"
+    # -- Controller image tag label (only used when `tag` above is unset)
     tagLabel: jdk21
     # -- Controller image pull policy
     pullPolicy: "Always"
@@ -102,6 +106,11 @@ controller:
   #     value: "http://192.168.64.1:3128"
   # Set min/max heap here if needed with:
   # javaOpts: "-Xms512m -Xmx512m"
+  # Enables Jenkins' recommended default Content-Security-Policy for
+  # static files served under /userContent, /ws, job artifacts, etc.
+  # Fixes the CSP warning on /manage/. Empty value = use Jenkins' built-in
+  # default policy (see hudson.model.DirectoryBrowserSupport.CSP docs).
+  javaOpts: "-Dhudson.model.DirectoryBrowserSupport.CSP="
   # jenkinsOpts: ""
   # If you are using the ingress definitions provided by this chart via the `controller.ingress` block the configured hostname will be the ingress hostname starting with `https://` or `http://` depending on the `tls` configuration.
   # The Protocol can be overwritten by specifying `controller.jenkinsUrlProtocol`.
@@ -282,7 +291,14 @@ controller:
   installLatestSpecifiedPlugins: true
 
   # List of plugins to install in addition to those listed in controller.installPlugins
-  additionalPlugins: [blueocean, ansible, locale, terraform, docker-plugin, docker-slaves, docker-workflow]
+  # Note: blueocean removed - it and its ~17 dependency plugins are deprecated
+  # upstream (obsolete, no longer developed) and were showing as warnings on
+  # /manage/. Its pipeline UI is superseded by the built-in Pipeline views.
+  # docker-slaves also removed: unused (the Jenkinsfile agent uses the
+  # standard Kubernetes plugin cloud, not docker-slaves syntax) and it failed
+  # to load against Jenkins 2.568.2 (needs a newer command-launcher than
+  # what's bundled), which crashed every page load with a 500.
+  additionalPlugins: [ansible, locale, terraform, docker-plugin, docker-workflow]
 
   # Enable to initialize the Jenkins controller only once on initial installation.
   # Without this, whenever the controller gets restarted (Evicted, etc.) it will fetch plugin updates which has the potential to cause breakage.
@@ -360,6 +376,36 @@ controller:
       jenkins: |
         jenkins:
           numExecutors: 0
+          # Without an explicit authorizationStrategy, Jenkins defaults to
+          # "anyone can do anything" even with a securityRealm configured -
+          # this was the "Jenkins is currently unsecured" warning on
+          # /manage/. Restrict everything to the local admin user below.
+          authorizationStrategy:
+            loggedInUsersCanDoAnything:
+              allowAnonymousRead: false
+          # NOTE: this used to live in the separate controller.JCasC.securityRealm
+          # value below. That convenience field is ONLY applied by this chart
+          # when controller.sidecars.configAutoReload.enabled is true (see
+          # jcasc-config.yaml in the chart source) - it's false here (and was
+          # never turned on), so securityRealm was silently never being set at
+          # all: config.xml showed securityRealm class="hudson.security.SecurityRealm$None"
+          # and no login was actually possible, no matter the password. Moved
+          # into configScripts, which the chart always applies regardless of
+          # the sidecar setting.
+          securityRealm:
+            local:
+              allowsSignup: false
+              enableCaptcha: false
+              users:
+              - id: "${chart-admin-username}"
+                name: "Jenkins Admin"
+                password: "${chart-admin-password}"
+      unclassified: |
+        unclassified:
+          location:
+            # Fixes "Jenkins URL is empty" warning on /manage/ - required for
+            # BUILD_URL, notifications, PR status updates, etc.
+            url: "http://jenkins.jenkins.svc.cluster.local:8080/"
       job: |
         jobs:
           - script: >
@@ -437,12 +483,18 @@ controller:
                     - terraformInstaller:
                         id: "21109-linux-amd64"
 
+    # security (apiToken settings) and securityRealm below are chart
+    # convenience fields that this chart version ONLY renders when
+    # controller.sidecars.configAutoReload.enabled is true (see
+    # jcasc-config.yaml in the chart source) - it's false, so these are
+    # dead/no-op here. The actual securityRealm now lives in
+    # configScripts.jenkins above, which the chart always applies. Left here
+    # only as reference/history; do not rely on this block taking effect.
     security:
       apiToken:
         creationOfLegacyTokenEnabled: false
         tokenGenerationOnCreationEnabled: false
         usageStatisticsEnabled: true
-    # Ignored if securityRealm is defined in controller.JCasC.configScripts
     securityRealm: |-
       local:
         allowsSignup: false
