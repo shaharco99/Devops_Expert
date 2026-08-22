@@ -2,7 +2,7 @@
 # image version can be changed by "docker build --build-arg image_version={{new_image_version}}"
 ARG image_name=ubuntu
 ARG image_version=22.04
-ARG packages='python3 python3-pip wget unzip telnet iputils-ping'
+ARG packages='python3 python3-pip wget unzip telnet iputils-ping git'
 # Pinned Docker CLI / Compose versions: the bundled CLI (20.10.13, API 1.41) is
 # too old for current Docker daemons (min supported API 1.44+). These static
 # binaries replace it so `docker`/`docker-compose` calls against the mounted
