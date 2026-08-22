@@ -82,6 +82,7 @@ pipeline {
             steps {
                 container('docker') {
                     sh '''
+                        cd ${WORKSPACE_DIR}
                         echo "=== Starting Services ==="
                         docker-compose down --remove-orphans
                         docker-compose up -d --build
@@ -96,6 +97,7 @@ pipeline {
             steps {
                 container('docker') {
                     sh '''
+                        cd ${WORKSPACE_DIR}
                         echo "=== Running Tests ==="
                         echo "=== Test Environment Setup ==="
                         echo "Current directory: $(pwd)"
@@ -117,6 +119,7 @@ pipeline {
                             echo "=== Pushing Image to Registry ==="
                             docker push ${DOCKER_HUB_REPO}:${imageVersion}
                             echo "=== Cleanup ==="
+                            cd ${WORKSPACE_DIR}
                             docker-compose down --remove-orphans
                         '''
                     }
@@ -129,6 +132,7 @@ pipeline {
         always {
             container('docker') {
                 sh '''
+                    cd ${WORKSPACE_DIR}
                     echo "=== Cleanup ==="
                     docker-compose down --remove-orphans
                 '''
@@ -137,6 +141,7 @@ pipeline {
         failure {
             container('docker') {
                 sh '''
+                    cd ${WORKSPACE_DIR}
                     echo "=== Debug Information on Failure ==="
                     echo "Docker Compose Logs:"
                     docker-compose logs
