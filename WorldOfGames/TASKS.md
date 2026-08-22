@@ -47,6 +47,8 @@ All verified via live pipeline run (build #10, SUCCESS) and local `docker build`
 - [x] Strip unneeded packages from `jenkinsslave/Dockerfile` 2026-08-22: dropped `wget`, `telnet`, `iputils-ping` (unused - docker/docker-compose calls use curl, nothing pings/telnets). Kept `unzip` (webdriver_manager needs it) and added `git` (gitleaks needs it for history-mode scans) + `python3-venv` (pip-audit needs it internally).
 - [x] Add `SECURITY.md` 2026-08-22 - covers the Docker-socket-mount risk (links back here), credential scope, and what's actually scanned in CI.
 
+All of the above verified live on build #13 (SUCCESS) - Secrets Scan → Lint → Format Check → Dependency Audit → Clean → Build → Image Scan → Run → Test → Finalize, every gate actually ran and passed (not skipped/cached). Two build-fixing detours along the way, both fixed and re-verified: gitleaks needed `git config --global --add safe.directory` (was silently no-op'ing on a UID mismatch, gave a false "clean" pass); ruff/black/pip-audit needed to run `cd`'d into `WorldOfGames/` like the other stages, not from the parent checkout root (CWD changes ruff's import-sort heuristics).
+
 ## Base image versions bumped 2026-08-22 (LTS preference)
 
 - App `Dockerfile`: `python:alpine` (floating, was resolving to 3.14) → pinned `python:3.13-alpine` (mature, long support runway, explicit not floating).
