@@ -1,6 +1,6 @@
 # Devops_Expert
 
-Course work from the DevOps Expert course: weekly lesson exercises plus the final
+Course work from the DevOps Experts course (2022): weekly lesson exercises plus the final
 project, **World of Games**, which I have since extended with a security-gated
 Jenkins pipeline, Postgres, and a GitOps deployment to Kubernetes with ArgoCD.
 
