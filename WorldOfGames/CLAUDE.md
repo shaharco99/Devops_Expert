@@ -17,7 +17,7 @@ Full stack via Docker:
 ```bash
 docker-compose up -d
 ```
-This builds and runs `score_flask` on port 5000 and defines a `tester` service that installs `requirements` and runs `pytest test.py` against the running `score` service (`http://score:5000/`, docker-compose network alias — tests are not meant to run standalone against localhost).
+This starts Postgres (`score_db`), builds and runs `score_flask` on port 5000, and defines a `tester` service (built from `Dockerfile.tester`) that runs `pytest test.py` against the running `score` service (`http://score:5000/`, docker-compose network alias — tests are not meant to run standalone against localhost).
 
 Run the CLI game menu inside the container:
 ```bash
@@ -35,13 +35,13 @@ There is no unit-test suite decoupled from the running Flask service — `test.p
 ## Architecture
 
 - `MainScores.py` — Flask routes: `/` (renders current score from `Score.py`), `/gamepicker`, `/memorygame`, `/guessgame`, `/currency`, `/savegame`, and `/process_input` (POST form dispatch that redirects to the chosen game route by `game_chosen` int). 500 errors render `template/err500.html`.
-- `Score.py` — reads/writes an integer score to `Scores.txt` (`add_score(diff)` computes `score += diff*3 + 5`). This is flat-file state, not a database — score persistence lives in `Scores.txt` at repo root and must be present in the container/volume for reads to succeed.
+- `Score.py` — reads/writes a single integer score in Postgres (`scores` table, created on first connect) via pg8000. `add_score(diff)` adds `diff*3 + 5` in one atomic `UPDATE`, so concurrent wins are not lost. Connection settings come from `POSTGRES_HOST/PORT/DB/USER/PASSWORD`.
 - `template/*.html` — one template per route above.
 - `games/` — standalone CLI game logic (`CurrencyRouletteGame.py`, `GuessGame.py`, `MemoryGame.py`, `Live.py` for prompts/menu). Driven by `MainGame.py`, independent of the Flask routes/templates — the web UI does not currently call into these implementations.
 
 ## Deployment (Jenkins)
 
-`Jenkinsfile` runs on a Kubernetes Jenkins agent using the `shaharco1804/world_of_game` image (built from `jenkinsslave/Dockerfile`) with the host's docker socket mounted, so `docker`/`docker-compose` commands inside the pipeline control the host's Docker daemon. Pipeline stages: verify `requirements` exists, remove any existing `score_flask` container, `docker build` the app image tagged `${DOCKER_HUB_REPO}:v<YYYYMMDD>`, bring the stack up with `docker-compose up -d --build`, run tests via `docker-compose run --rm tester`, then push the image to Docker Hub (`dockerhub` credentials) and tear the stack down. `docker-compose down` also runs in `post { always / failure }` for cleanup/debugging.
+`Jenkinsfile` runs on a Kubernetes Jenkins agent using the `shaharco1804/world_of_game` image (built from `jenkinsslave/Dockerfile`) with the host's docker socket mounted, so `docker`/`docker-compose` commands inside the pipeline control the host's Docker daemon. Pipeline stages: Workspace Inspection → Secrets Scan (gitleaks) → Lint (ruff) → Format Check (black) → Dependency Audit (pip-audit) → Clean → Build (image tagged `${DOCKER_HUB_REPO}:v<YYYYMMDD>`) → Image Scan (Trivy, report-only) → Run (`docker-compose up`) → Test (`docker-compose run --rm tester`) → Finalize (push to Docker Hub with the `dockerhub` credential) → Deploy (bump the image tag in `manifests/score-flask.yaml` and push). ArgoCD (`manifests/argocd-application.yaml`) watches `manifests/` and syncs the cluster; see `ARGOCD.md`. `docker-compose down` also runs in `post { always / failure }`.
 
 `jenkinsslave/` builds the Jenkins agent image itself (`world_of_game`) — separate from the app image (`score_flask`) built by the root `Dockerfile`. `values.yaml` / `init_jenkins.yaml` are Helm values for installing Jenkins on Kubernetes (`helm install jenkins jenkins/jenkins -f values.yaml --namespace=jenkins`).
 

@@ -75,4 +75,4 @@ Admin password: `kubectl exec -n jenkins jenkins-0 -- cat /run/secrets/chart-adm
 
 - Full audit findings + scores + risk writeup: see conversation 2026-08-22, or re-run `/devsecops` audit if this file goes stale.
 - Key risk chain: Jenkins agent pod mounts host docker.sock (`Jenkinsfile`) + unpinned deps (`requirements`, `jenkinsslave/requirements`) = supply-chain compromise path to host root.
-- App = Flask (`MainScores.py`) + flat-file score state (`Score.py`/`Scores.txt`); CLI games (`MainGame.py`, `games/`) are separate, unrelated to web routes. See `CLAUDE.md` for architecture.
+- App = Flask (`MainScores.py`) + score in Postgres (`Score.py`; moved from `Scores.txt` to SQLite, then to Postgres in `4816481`); CLI games (`MainGame.py`, `games/`) are separate, unrelated to web routes. See `CLAUDE.md` for architecture.

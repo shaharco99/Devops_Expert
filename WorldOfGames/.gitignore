@@ -5,4 +5,3 @@ venv/
 .pytest_cache/
 .env
 *.egg-info/
-scores.db
