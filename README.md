@@ -1,6 +1,6 @@
 # Devops_Expert
 
-Course work from a DevOps course: weekly lesson exercises plus the final
+Course work from the DevOps Expert course: weekly lesson exercises plus the final
 project, **World of Games**, which I have since extended with a security-gated
 Jenkins pipeline, Postgres, and a GitOps deployment to Kubernetes with ArgoCD.
 
@@ -62,6 +62,3 @@ test.py::test_scores_service PASSED                                      [100%]
 | `lesson_10` | Kubernetes Deployments and Services for Airflow, Jenkins, Superset, Weave Scope |
 | `lesson_11` | A Helm chart with values files for Airflow and Superset |
 | `lesson_12` | Launching EC2 instances with boto3 |
-
-`azure-pipelines.yml` is an earlier Azure DevOps pipeline for World of Games;
-the Jenkins pipeline replaced it.
